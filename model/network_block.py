@@ -25,10 +25,10 @@ class DoubleConvBlock(nn.Module):
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels, kernel_size=(3, 3), padding=1, bias=False),
             nn.BatchNorm2d(mid_channels),
-            _act_func_dict[act_func],
+            _act_func_dict[act_func](),
             nn.Conv2d(mid_channels, out_channels, kernel_size=(3, 3), padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
-            _act_func_dict[act_func],
+            _act_func_dict[act_func](),
         )
 
     def forward(self, x):
@@ -36,13 +36,19 @@ class DoubleConvBlock(nn.Module):
 
 
 class DownSampling(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int):
+    def __init__(
+            self,
+            in_channels: int,
+            out_channels: int,
+            act_func: str = 'ReLU'
+    ):
         super().__init__()
         self.layers = nn.Sequential(
             nn.MaxPool2d(2),
             DoubleConvBlock(
                 in_channels=in_channels,
-                out_channels=out_channels
+                out_channels=out_channels,
+                act_func=act_func
             )
         )
 
@@ -55,14 +61,21 @@ class UpSampling(nn.Module):
     def is_available_interp(interp: str):
         return interp in ['nearest', 'linear', 'bilinear', 'bicubic', 'trilinear']
 
-    def __init__(self, in_channels: int, out_channels: int, interp: str='bilinear'):
+    def __init__(
+            self,
+            in_channels: int,
+            out_channels: int,
+            interp: str = None,
+            act_func: str = "ReLU"
+    ):
         super().__init__()
         if self.is_available_interp(interp):
             self.upSampling = nn.Upsample(scale_factor=2, mode=interp, align_corners=True)
             self.convBlock = DoubleConvBlock(
                 in_channels=in_channels,
                 out_channels=out_channels,
-                mid_channels=int(in_channels/2)
+                mid_channels=int(in_channels/2),
+                act_func=act_func
             )
         else:
             self.upSampling = nn.ConvTranspose2d(
@@ -74,11 +87,12 @@ class UpSampling(nn.Module):
             self.convBlock = DoubleConvBlock(
                 in_channels=in_channels,
                 out_channels=out_channels,
+                act_func=act_func
             )
 
     def forward(self, x, skippeddata):
         upsampled_x = self.upSampling(x)
-        x = torch.cat([skippeddata, upsampled_x])
+        x = torch.cat([skippeddata, upsampled_x], 1)
         return self.convBlock(x)
 
 
@@ -92,7 +106,7 @@ class LastConv(nn.Module):
         )
 
     def forward(self, x):
-        return self.conv(x)
+        return self.convBlock(x)
 
 
 @register_act_func

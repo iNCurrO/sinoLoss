@@ -1,0 +1,122 @@
+import os
+import numpy as np
+import zipfile
+import PIL.Image
+import torchvision
+import torch
+from torch.utils.data import Dataset, DataLoader
+from typing import Tuple
+import pyspng
+
+
+class singleDataset(Dataset):
+    def __init__(self,
+                 path: str,
+                 ):
+        self._path = path
+        self._all_fnames = {
+            os.path.relpath(os.path.join(root, fname), start=self._path)
+            for root, _dirs, files in os.walk(self._path)
+            for fname in files
+        }
+
+        PIL.Image.init()
+        self._image_fnames = sorted(fname for fname in self._all_fnames if self._file_ext(fname) in PIL.Image.EXTENSION)
+        if len(self._image_fnames) == 0:
+            raise IOError('No image files found in the specified path')
+
+        self._name = os.path.splitext(os.path.basename(self._path))[0]
+        self._img_shape = [len(self._image_fnames)] + list(self._load_raw_image(0).shape)
+
+    def num_channels(self):
+        return self._img_shape[1]
+
+    @staticmethod
+    def _file_ext(fname):
+        return os.path.splitext(fname)[1].lower()
+
+    def __len__(self):
+        return len(self._image_fnames)
+
+    def _open_file(self, fname):
+        return open(os.path.join(self._path, fname), 'rb')
+
+    def _load_raw_image(self, raw_idx):
+        fname = self._image_fnames[raw_idx]
+        with self._open_file(fname) as f:
+            if pyspng is not None and self._file_ext(fname) == '.png':
+                image = pyspng.load(f.read())
+            else:
+                image = np.array(PIL.Image.open(f))
+        if image.ndim == 2:
+            image = image[:, :, np.newaxis]  # HW => HWC
+        image = torchvision.transforms.functional.to_tensor(
+            image,
+        )
+        return image
+
+    def __getitem__(self, item):
+        image = self._load_raw_image(item)
+        assert list(image.shape) == self._img_shape[1:4], print(image.shape, self._img_shape[1:4])
+        return image
+
+
+class TotalDataset(Dataset):
+    def __init__(self, inputdataset, sinodataset, targetdataset):
+        self._inputdataset = inputdataset
+        self._sinodataset = sinodataset
+        self._targetdataset = targetdataset
+        self._datasets = [self._inputdataset, self._sinodataset, self._targetdataset]
+        assert len(self._inputdataset) == len(self._sinodataset)
+        assert len(self._inputdataset) == len(self._targetdataset)
+        assert self._inputdataset.num_channels() == self._targetdataset.num_channels(), \
+            print(f"input data {self._inputdataset.num_channels()}: target data{self._targetdataset.num_channels()}")
+        self._datalen = len(self._targetdataset)
+
+    def num_channels(self):
+        return self._inputdataset.num_channels()
+
+    def __getitem__(self, idx):
+        return tuple([dataset[idx] for dataset in self._datasets])
+
+    def __len__(self):
+        return self._datalen
+
+
+def set_dataset(config):
+    basedir = config.datadir
+    __batchsize__ = config.batchsize
+
+    # Dataset for training
+    __inputdir__ = os.path.join(basedir, config.dataname + "R")
+    __sinodir__ = os.path.join(basedir, config.dataname + "S")
+    __targetdir__ = os.path.join(basedir, config.FVdataname + "R")
+    ds = TotalDataset(
+            inputdataset=singleDataset(path=__inputdir__),
+            sinodataset=singleDataset(path=__sinodir__),
+            targetdataset=singleDataset(path=__targetdir__)
+        )
+
+    # Dataset for validation
+    __inputdir__ = os.path.join(basedir, config.dataname + "R_v")
+    __sinodir__ = os.path.join(basedir, config.dataname + "S_v")
+    __targetdir__ = os.path.join(basedir, config.FVdataname + "R_v")
+    ds_v = TotalDataset(
+            inputdataset=singleDataset(path=__inputdir__),
+            sinodataset=singleDataset(path=__sinodir__),
+            targetdataset=singleDataset(path=__targetdir__)
+        )
+
+    return DataLoader(
+        dataset=ds,
+        batch_size=__batchsize__,
+        shuffle=True,
+        num_workers=config.numworkers,
+        pin_memory=True
+    ), DataLoader(
+        dataset=ds_v,
+        batch_size=4,
+        shuffle=True,
+        num_workers=config.numworkers,
+        pin_memory=True
+    ), ds.num_channels()
