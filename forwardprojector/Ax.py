@@ -1,4 +1,4 @@
-import tigre
+# import tigre # TODO Remove tigre option
 import numpy as np
 import torch
 

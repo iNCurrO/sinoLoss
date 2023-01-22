@@ -36,7 +36,7 @@ def save_images(input_images, tag, epoch, savedir):
     print(f"Save complete!\n ")
 
 
-def save_image_grid(img, fname, grid_size=(2, 2)):
+def save_image_grid(img, fname, grid_size=(1, 1)): # TODO make datasize optinize
     lo, hi = [0, 1]
     img = np.asarray(img, dtype=np.float32)
     img = (img - lo) * (255 / (hi - lo))

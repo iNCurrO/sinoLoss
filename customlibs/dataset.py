@@ -116,7 +116,7 @@ def set_dataset(config):
         pin_memory=True
     ), DataLoader(
         dataset=ds_v,
-        batch_size=4,
+        batch_size=1, # TODO dataset validation bat size make optinize
         shuffle=True,
         num_workers=config.numworkers,
         pin_memory=True
