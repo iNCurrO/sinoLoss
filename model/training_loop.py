@@ -41,7 +41,7 @@ def training_loop(
     network.eval()
     val_denoised_img = network(val_noisy_img.cuda())
     save_images(val_denoised_img.cpu().detach().numpy(), epoch=0, tag="denoised", savedir=log_dir)
-    network.train()
+    network.train().requires_grad_(True)
     start_time = time.time()
     cur_time = time.time()
     for cur_epoch in range(training_epoch):

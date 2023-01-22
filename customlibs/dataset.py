@@ -88,9 +88,9 @@ def set_dataset(config):
     __batchsize__ = config.batchsize
 
     # Dataset for training
-    __inputdir__ = os.path.join(basedir, config.dataname + "R")
-    __sinodir__ = os.path.join(basedir, config.dataname + "S")
-    __targetdir__ = os.path.join(basedir, config.FVdataname + "R")
+    __inputdir__ = os.path.join(basedir, "VSparseview_recon")
+    __sinodir__ = os.path.join(basedir, "VSparseview_sino")
+    __targetdir__ = os.path.join(basedir, "Fullview_recon")
     ds = TotalDataset(
             inputdataset=singleDataset(path=__inputdir__),
             sinodataset=singleDataset(path=__sinodir__),
@@ -98,9 +98,10 @@ def set_dataset(config):
         )
 
     # Dataset for validation
-    __inputdir__ = os.path.join(basedir, config.dataname + "R_v")
-    __sinodir__ = os.path.join(basedir, config.dataname + "S_v")
-    __targetdir__ = os.path.join(basedir, config.FVdataname + "R_v")
+    # TODO sino dataloader delete
+    __inputdir__ = os.path.join(basedir, "VSparseview_recon_val")
+    __sinodir__ = os.path.join(basedir, "VSparseview_recon_val")
+    __targetdir__ = os.path.join(basedir, "Fullview_recon_Val")
     ds_v = TotalDataset(
             inputdataset=singleDataset(path=__inputdir__),
             sinodataset=singleDataset(path=__sinodir__),

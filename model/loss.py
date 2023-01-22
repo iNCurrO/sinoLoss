@@ -48,10 +48,10 @@ class total_Loss:
         logs = []
         for idx, loss in enumerate(self._loss_list):
             with torch.autograd.profiler.record_function(loss+"_forward"):
-                denoised_img = self._network(input_img)
+                denoised_img = self._network(input_img.requires_grad_(True))
                 temp_loss = _loss_dict[loss](denoised_img, target_img, input_sino, self._Amatrix)
             with torch.autograd.profiler.record_function(loss+"_backward"):
-                temp_loss.mean().mul(self._loss_weight[idx]).backward()
+                temp_loss.mul(self._loss_weight[idx]).backward()
         return logs
 
 
