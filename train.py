@@ -7,7 +7,6 @@ from model import unet
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
-from forwardprojector.geometry import get_CTgeo
 device = torch.device('cuda')
 
 
@@ -24,14 +23,12 @@ def main():
     print(f"Data initialization: {config.dataname}")
     dataloader, valdataloader, num_channels = set_dataset(config)
 
-    # Initilizize CT geometry
-    CTGeo = get_CTgeo(config)
-
     # Check Resume?
     if config.resume:
         print(f"Resume from: {config.resume}")
         __savedir__ = set_dir(config) + f"_resume{config.resume}"
         network, optimizer = resume_network(config.resume)
+        # TODO make resume (Including load parameters)
         pass
     else:
         # Make dir
@@ -41,7 +38,7 @@ def main():
         # initialize model
         print(f"Network initialization: {config.model}")
         network = model_init[config.model.upper()](config, num_channels).cuda()
-        save_parameters(network.hyperparams)
+        save_parameters(network.hyperparams) # TODO make save_parameters
 
         # Set option
         optimizer = set_optimizer(config, network)
@@ -49,13 +46,14 @@ def main():
     training_loop(
         log_dir=__savedir__,
         training_epoch=config.trainingepoch,
+        checkpoint_intvl=config.save_intlvl,
         loss_list=config.losses,
         loss_weights=config.weights,
         training_set=dataloader,
         validation_set=valdataloader,
         network=network,
-        CTGeo=CTGeo,
-        optimizer=optimizer
+        optimizer=optimizer,
+        config=config
     )
 
 

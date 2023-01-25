@@ -30,13 +30,16 @@ def save_network(network, epoch, savedir):
     print(f"Save complete!")
 
 
-def save_images(input_images, tag, epoch, savedir):
+def save_images(input_images, tag, epoch, savedir, batchnum):
     print(f"Saving samples...")
-    save_image_grid(input_images, os.path.join(savedir, f'samples-{epoch}-{tag}.png'))
+    save_image_grid(
+        input_images,
+        os.path.join(savedir, f'samples-{epoch}-{tag}.png'), grid_size=(int(np.sqrt(batchnum)), int(np.sqrt(batchnum)))
+    )
     print(f"Save complete!\n ")
 
 
-def save_image_grid(img, fname, grid_size=(1, 1)): # TODO make datasize optinize
+def save_image_grid(img, fname, grid_size=(1, 1)):
     lo, hi = [0, 1]
     img = np.asarray(img, dtype=np.float32)
     img = (img - lo) * (255 / (hi - lo))

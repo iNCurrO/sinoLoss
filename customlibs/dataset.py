@@ -66,8 +66,11 @@ class TotalDataset(Dataset):
         self._inputdataset = inputdataset
         self._sinodataset = sinodataset
         self._targetdataset = targetdataset
-        self._datasets = [self._inputdataset, self._sinodataset, self._targetdataset]
-        assert len(self._inputdataset) == len(self._sinodataset)
+        if self._sinodataset is not None:
+            self._datasets = [self._inputdataset, self._sinodataset, self._targetdataset]
+            assert len(self._inputdataset) == len(self._sinodataset)
+        else:
+            self._datasets = [self._inputdataset, self._targetdataset]
         assert len(self._inputdataset) == len(self._targetdataset)
         assert self._inputdataset.num_channels() == self._targetdataset.num_channels(), \
             print(f"input data {self._inputdataset.num_channels()}: target data{self._targetdataset.num_channels()}")
@@ -84,7 +87,7 @@ class TotalDataset(Dataset):
 
 
 def set_dataset(config):
-    basedir = config.datadir
+    basedir = os.path.join(config.datadir, config.dataname)
     __batchsize__ = config.batchsize
 
     # Dataset for training
@@ -98,13 +101,11 @@ def set_dataset(config):
         )
 
     # Dataset for validation
-    # TODO sino dataloader delete
     __inputdir__ = os.path.join(basedir, "VSparseview_recon_val")
-    __sinodir__ = os.path.join(basedir, "VSparseview_recon_val")
     __targetdir__ = os.path.join(basedir, "Fullview_recon_Val")
     ds_v = TotalDataset(
             inputdataset=singleDataset(path=__inputdir__),
-            sinodataset=singleDataset(path=__sinodir__),
+            sinodataset=None,
             targetdataset=singleDataset(path=__targetdir__)
         )
 
@@ -116,7 +117,7 @@ def set_dataset(config):
         pin_memory=True
     ), DataLoader(
         dataset=ds_v,
-        batch_size=1, # TODO dataset validation bat size make optinize
+        batch_size=config.valbatchsize,
         shuffle=True,
         num_workers=config.numworkers,
         pin_memory=True

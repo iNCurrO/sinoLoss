@@ -1,9 +1,7 @@
 import time
 from typing import Tuple
-from . import unet
-import torch
+
 from tqdm import tqdm
-import pickle
 from customlibs.chores import save_network, save_images
 from model.loss import *
 
@@ -17,8 +15,8 @@ def training_loop(
         training_set=None,  # Dataloader of training set
         validation_set=None,  # Dataloader of validation set
         network=None,  # Constructed network
-        CTGeo=None,  # Info about CT Geometry
         optimizer=None,  # Used optimizer
+        config=None,
 ):
     device = torch.device('cuda')
 
@@ -30,17 +28,21 @@ def training_loop(
 
     # Constructing losses
     print("Constructing losses....")
-    loss_func = total_Loss(device=device, network=network, loss_list=loss_list, loss_weight=loss_weights, CTGeo=CTGeo)
+    loss_func = total_Loss(device=device, network=network, config=config, loss_list=loss_list, loss_weight=loss_weights)
 
     # Initialize logs
 
     # Train
     print("Start Training...\nSaving Initial samples")
-    val_noisy_img, _, val_target_img = next(iter(validation_set))
-    save_images(val_target_img, epoch=0, tag="target", savedir=log_dir)
+    val_noisy_img, val_target_img = next(iter(validation_set))
+    val_batch_size = val_noisy_img.shape[0]
+    save_images(val_target_img, epoch=0, tag="target", savedir=log_dir, batchnum=val_batch_size)
+    save_images(val_noisy_img, epoch=0, tag='noisy', savedir=log_dir, batchnum=val_batch_size)
     network.eval()
     val_denoised_img = network(val_noisy_img.cuda())
-    save_images(val_denoised_img.cpu().detach().numpy(), epoch=0, tag="denoised", savedir=log_dir)
+    save_images(
+        val_denoised_img.cpu().detach().numpy(), epoch=0, tag="denoised", savedir=log_dir, batchnum=val_batch_size
+    )
     network.train().requires_grad_(True)
     start_time = time.time()
     cur_time = time.time()
@@ -52,7 +54,9 @@ def training_loop(
                 [noisy_img, sino, target_img] = samples
                 logs = loss_func.accumulate_gradients(noisy_img.cuda(), target_img.cuda(), sino.cuda())
                 pbar.set_description(
-                    f'Train Epoch: {cur_epoch}/{training_epoch}, mean(sec/batch): {(cur_time-start_time)/cur_epoch if cur_epoch else 0}, loss:' + str(logs) +
+                    f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                    f'mean(sec/batch): {(cur_time-start_time)/cur_epoch if cur_epoch else 0}, loss:' +
+                    str(logs) +
                     f'ETA: {(cur_time-start_time)/cur_epoch*(training_epoch-cur_epoch) if cur_epoch else 0}'
                 )
                 with torch.autograd.profiler.record_function("opt"):
@@ -64,5 +68,11 @@ def training_loop(
             network.eval()
             val_denoised_img = network(val_noisy_img.cuda())
             save_network(network=network, epoch=cur_epoch, savedir=log_dir)
-            save_images(val_denoised_img.cpu().detach().numpy(), epoch=cur_epoch, tag="denoised", savedir=log_dir)
+            save_images(
+                val_denoised_img.cpu().detach().numpy(),
+                epoch=cur_epoch,
+                tag="denoised",
+                savedir=log_dir,
+                batchnum=val_batch_size
+            )
             network.train()
