@@ -16,6 +16,7 @@ def training_loop(
         validation_set=None,  # Dataloader of validation set
         network=None,  # Constructed network
         optimizer=None,  # Used optimizer
+        Amatrix=None,
         config=None,
 ):
     device = torch.device('cuda')
@@ -31,6 +32,7 @@ def training_loop(
     loss_func = total_Loss(device=device, network=network, config=config, loss_list=loss_list, loss_weight=loss_weights)
 
     # Initialize logs
+    # TODO
 
     # Train
     print("Start Training...\nSaving Initial samples")
@@ -52,7 +54,12 @@ def training_loop(
             for batch_idx, samples in enumerate(pbar):
                 optimizer.zero_grad()
                 [noisy_img, sino, target_img] = samples
-                logs = loss_func.accumulate_gradients(noisy_img.cuda(), target_img.cuda(), sino.cuda())
+                logs = loss_func.accumulate_gradients(
+                    noisy_img.cuda(),
+                    target_img.cuda(),
+                    Amatrix=Amatrix,
+                    targetsino=sino.cuda()
+                )
                 pbar.set_description(
                     f'Train Epoch: {cur_epoch}/{training_epoch},' +
                     f'mean(sec/batch): {(cur_time-start_time)/cur_epoch if cur_epoch else 0}, loss:' +
@@ -64,13 +71,13 @@ def training_loop(
 
         # Save check point and evaluate
         cur_time = time.time()
-        if cur_epoch % checkpoint_intvl == 0 and cur_epoch != 0:
+        if cur_epoch % checkpoint_intvl == 0:
             network.eval()
             val_denoised_img = network(val_noisy_img.cuda())
             save_network(network=network, epoch=cur_epoch, savedir=log_dir)
             save_images(
                 val_denoised_img.cpu().detach().numpy(),
-                epoch=cur_epoch,
+                epoch=cur_epoch+1,
                 tag="denoised",
                 savedir=log_dir,
                 batchnum=val_batch_size

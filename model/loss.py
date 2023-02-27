@@ -21,7 +21,6 @@ class total_Loss:
             config,
             loss_list: Tuple[str] = tuple(["MSE"]),
             loss_weight: Tuple[float] = tuple([1.]),
-            AxWeight = None
     ):
         self._device = device
         self._network = network
@@ -41,38 +40,47 @@ class total_Loss:
     def run_denoiser(self, input_img):
         return self._network(input_img)
 
-    def accumulate_gradients(self, input_img, target_img, input_sino=None):
-        logs = []
+    def accumulate_gradients(self, input_img, target_img, Amatrix=None, targetsino=None):
+        logs = ""
         for idx, loss in enumerate(self._loss_list):
             with torch.autograd.profiler.record_function(loss+"_forward"):
                 denoised_img = self._network(input_img.requires_grad_(True))
-                temp_loss = _loss_dict[loss](denoised_img, target_img, input_sino, self._config)
+                temp_loss = _loss_dict[loss](
+                    denoised_img=denoised_img,
+                    target_img=target_img,
+                    Amatrix=Amatrix,
+                    targetsino=targetsino,
+                    config=self._config
+                )
             with torch.autograd.profiler.record_function(loss+"_backward"):
                 temp_loss.mul(self._loss_weight[idx]).backward()
+            logs += f'{idx}. Loss of {loss}: {temp_loss}'
         return logs
 
 
 @implemented_loss_list
-def MSE(denoised_img, target_img, input_sino=None, config=None):
+def MSE(denoised_img, target_img, Amatrix=None, targetsino=None, config=None):
     MSEloss = torch.nn.MSELoss()
     return MSEloss(denoised_img, target_img)
 
 
 @implemented_loss_list
-def MAE(denoised_img, target_img, input_sino=None,config=None):
+def MAE(denoised_img, target_img, Amatrix=None, targetsino=None, config=None):
     MAEloss = torch.nn.L1Loss()
     return MAEloss(denoised_img, target_img)
 
 
 @implemented_loss_list
-def sinoloss_MSE(denoised_img, target_img, input_sino, config):
-    denoised_sino = Ax.forwardproejection(denoised_img, config)
+def sinoloss_MSE(denoised_img, target_img, Amatrix=None, targetsino=None, config=None):
+    denoised_sino = Ax.forwardproejection(denoised_img, Amatrix, config)
+    sino = Ax.forwardproejection(target_img, Amatrix, config)
     MSEloss = torch.nn.MSELoss()
-    return MSEloss(denoised_sino, input_sino)
+    return MSEloss(denoised_sino, sino)
 
 
 @implemented_loss_list
-def sinoloss_MAE(denoised_img, target_img, input_sino, config):
-    denoised_sino = Ax.forwardproejection(denoised_img, config)
+def sinoloss_MAE(denoised_img, target_img, Amatrix=None, targetsino=None, config=None):
+    denoised_sino = Ax.forwardproejection(denoised_img, Amatrix, config)
+    sino = Ax.forwardproejection(target_img, Amatrix, config)
     MAEloss = torch.nn.L1Loss()
-    return MAEloss(denoised_sino, input_sino)
+    return MAEloss(denoised_sino, sino)

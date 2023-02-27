@@ -6,8 +6,10 @@ from PIL import Image
 
 
 def set_dir(config) -> str:
+    logdir = os.listdir(config.logdir)
+    logdir.sort()
     if os.listdir(config.logdir):
-        dirnum = int(os.listdir(config.logdir)[-1][:3])+1
+        dirnum = int(logdir[-1][:3])+1
     else:
         dirnum = 0
     __savedir__ = f"{dirnum:03}"
@@ -30,24 +32,32 @@ def save_network(network, epoch, savedir):
     print(f"Save complete!")
 
 
-def save_images(input_images, tag, epoch, savedir, batchnum):
+def save_images(input_images, tag, epoch, savedir, batchnum, sino=False):
     print(f"Saving samples...")
+    nx = int(np.ceil(np.sqrt(batchnum)))
     save_image_grid(
         input_images,
-        os.path.join(savedir, f'samples-{epoch}-{tag}.png'), grid_size=(int(np.sqrt(batchnum)), int(np.sqrt(batchnum)))
+        os.path.join(savedir, f'samples-{epoch}-{tag}.png'), grid_size=(nx, nx), sino=sino
     )
     print(f"Save complete!\n ")
 
 
-def save_image_grid(img, fname, grid_size=(1, 1)):
-    lo, hi = [0, 1]
+def save_image_grid(img, fname, grid_size=(1, 1), sino=False):
+    if sino:
+        lo, hi = [-18.2, 182+18.2]
+    else:
+        lo, hi = [0, 1]
+
     img = np.asarray(img, dtype=np.float32)
     img = (img - lo) * (255 / (hi - lo))
     img = np.rint(img).clip(0, 255).astype(np.uint8)
 
     gw, gh = grid_size
     _N, C, H, W = img.shape
-    img = img.reshape(gh, gw, C, H, W)
+    _N_diff = gw*gh - _N
+    if _N_diff != 0:
+        img = np.concatenate((img, np.zeros([_N_diff, C, H, W])))
+    img = img.reshape([gh, gw, C, H, W])
     img = img.transpose(0, 3, 1, 4, 2)
     img = img.reshape(gh * H, gw * W, C)
 
