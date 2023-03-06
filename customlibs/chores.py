@@ -44,10 +44,9 @@ def save_images(input_images, tag, epoch, savedir, batchnum, sino=False):
 
 def save_image_grid(img, fname, grid_size=(1, 1), sino=False):
     if sino:
-        lo, hi = [-18.2, 182+18.2]
+        lo, hi = [np.amin(img), np.amax(img)]
     else:
         lo, hi = [0, 1]
-
     img = np.asarray(img, dtype=np.float32)
     img = (img - lo) * (255 / (hi - lo))
     img = np.rint(img).clip(0, 255).astype(np.uint8)

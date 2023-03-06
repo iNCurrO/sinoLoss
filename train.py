@@ -7,7 +7,8 @@ from model import unet
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
-from forwardprojector.GenerateAmatrix import GenAmtrx
+from forwardprojector.FP import FP
+# from forwardprojector.GenerateAmatrix import GenAmtrx
 device = torch.device('cuda')
 
 
@@ -26,7 +27,7 @@ def main():
 
     # Generate Amatrix
     print(f"Amatrix initialization...")
-    Amatrix = GenAmtrx(config)
+    Amatrix = FP(config)
 
     # Check Resume?
     if config.resume:

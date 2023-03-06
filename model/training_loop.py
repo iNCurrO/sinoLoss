@@ -45,6 +45,14 @@ def training_loop(
     save_images(
         val_denoised_img.cpu().detach().numpy(), epoch=0, tag="denoised", savedir=log_dir, batchnum=val_batch_size
     )
+    save_images(
+        Amatrix(val_target_img.cuda()).cpu().detach().numpy(),
+        epoch=0, tag="target_sino", savedir=log_dir, batchnum=val_batch_size, sino=True
+    )
+    save_images(
+        Amatrix(val_noisy_img.cuda()).cpu().detach().numpy(),
+        epoch=0, tag='noisy_sino', savedir=log_dir, batchnum=val_batch_size, sino=True
+    )
     network.train().requires_grad_(True)
     start_time = time.time()
     cur_time = time.time()
