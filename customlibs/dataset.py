@@ -144,7 +144,7 @@ def set_dataset(config):
 
     # Dataset for validation
     __inputdir__ = os.path.join(basedir, "VSparseview_recon_val")
-    __targetdir__ = os.path.join(basedir, "Fullview_recon_Val")
+    __targetdir__ = os.path.join(basedir, "Fullview_recon_val")
     ds_v = TotalDataset(
             inputdataset=sinogramDataset(path=__inputdir__),
             sinodataset=None,
