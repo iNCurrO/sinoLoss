@@ -9,6 +9,48 @@ from typing import Tuple
 import pyspng
 
 
+class sinogramDataset(Dataset):
+    def __init__(self,
+                 path: str,
+                 ):
+        self._path = path
+        self._all_fnames = {
+            os.path.relpath(os.path.join(root, fname), start=self._path)
+            for root, _dirs, files in os.walk(self._path)
+            for fname in files
+        }
+
+        self._image_fnames = sorted(fname for fname in self._all_fnames if self._file_ext(fname) == '.npy')
+        if len(self._image_fnames) == 0:
+            raise IOError('No image files found in the specified path')
+
+        self._name = os.path.splitext(os.path.basename(self._path))[0]
+        self._img_shape = [len(self._image_fnames)] + list(self._load_raw_image(0).shape)
+
+    def num_channels(self):
+        return self._img_shape[1]
+
+    @staticmethod
+    def _file_ext(fname):
+        return os.path.splitext(fname)[1].lower()
+
+    def __len__(self):
+        return len(self._image_fnames)
+
+    def _load_raw_image(self, raw_idx):
+        fname = self._image_fnames[raw_idx]
+        image = np.load(os.path.join(self._path, fname))
+        image = torchvision.transforms.functional.to_tensor(
+            image,
+        )
+        return image
+
+    def __getitem__(self, item):
+        image = self._load_raw_image(item)
+        assert list(image.shape) == self._img_shape[1:4], print(image.shape, self._img_shape[1:4])
+        return image
+
+
 class singleDataset(Dataset):
     def __init__(self,
                  path: str,
@@ -95,18 +137,18 @@ def set_dataset(config):
     __sinodir__ = os.path.join(basedir, "VSparseview_sino")
     __targetdir__ = os.path.join(basedir, "Fullview_recon")
     ds = TotalDataset(
-            inputdataset=singleDataset(path=__inputdir__),
-            sinodataset=singleDataset(path=__sinodir__),
-            targetdataset=singleDataset(path=__targetdir__)
+            inputdataset=sinogramDataset(path=__inputdir__),
+            sinodataset=sinogramDataset(path=__sinodir__),
+            targetdataset=sinogramDataset(path=__targetdir__)
         )
 
     # Dataset for validation
     __inputdir__ = os.path.join(basedir, "VSparseview_recon_val")
     __targetdir__ = os.path.join(basedir, "Fullview_recon_Val")
     ds_v = TotalDataset(
-            inputdataset=singleDataset(path=__inputdir__),
+            inputdataset=sinogramDataset(path=__inputdir__),
             sinodataset=None,
-            targetdataset=singleDataset(path=__targetdir__)
+            targetdataset=sinogramDataset(path=__targetdir__)
         )
 
     return DataLoader(
@@ -118,7 +160,7 @@ def set_dataset(config):
     ), DataLoader(
         dataset=ds_v,
         batch_size=config.valbatchsize,
-        shuffle=True,
+        shuffle=False,
         num_workers=config.numworkers,
         pin_memory=True
     ), ds.num_channels()

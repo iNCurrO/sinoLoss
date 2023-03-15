@@ -1,3 +1,4 @@
+import os.path
 import time
 from typing import Tuple
 
@@ -16,7 +17,6 @@ def training_loop(
         validation_set=None,  # Dataloader of validation set
         network=None,  # Constructed network
         optimizer=None,  # Used optimizer
-        Amatrix=None,
         config=None,
 ):
     device = torch.device('cuda')
@@ -32,7 +32,7 @@ def training_loop(
     loss_func = total_Loss(device=device, network=network, config=config, loss_list=loss_list, loss_weight=loss_weights)
 
     # Initialize logs
-    # TODO
+    log_file = open(os.path.join(log_dir, 'logs.txt'), 'w')
 
     # Train
     print("Start Training...\nSaving Initial samples")
@@ -45,14 +45,14 @@ def training_loop(
     save_images(
         val_denoised_img.cpu().detach().numpy(), epoch=0, tag="denoised", savedir=log_dir, batchnum=val_batch_size
     )
-    save_images(
-        Amatrix(val_target_img.cuda()).cpu().detach().numpy(),
-        epoch=0, tag="target_sino", savedir=log_dir, batchnum=val_batch_size, sino=True
-    )
-    save_images(
-        Amatrix(val_noisy_img.cuda()).cpu().detach().numpy(),
-        epoch=0, tag='noisy_sino', savedir=log_dir, batchnum=val_batch_size, sino=True
-    )
+    # save_images(
+    #     loss_func.run_Amatrix(val_target_img.cuda()).cpu().detach().numpy(),
+    #     epoch=0, tag="target_sino", savedir=log_dir, batchnum=val_batch_size, sino=True
+    # )
+    # save_images(
+    #     loss_func.run_Amatrix(val_noisy_img.cuda()).cpu().detach().numpy(),
+    #     epoch=0, tag='noisy_sino', savedir=log_dir, batchnum=val_batch_size, sino=True
+    # ) # TODO
     network.train().requires_grad_(True)
     start_time = time.time()
     cur_time = time.time()
@@ -65,7 +65,6 @@ def training_loop(
                 logs = loss_func.accumulate_gradients(
                     noisy_img.cuda(),
                     target_img.cuda(),
-                    Amatrix=Amatrix,
                     targetsino=sino.cuda()
                 )
                 pbar.set_description(
@@ -76,7 +75,6 @@ def training_loop(
                 )
                 with torch.autograd.profiler.record_function("opt"):
                     optimizer.step()
-
         # Save check point and evaluate
         cur_time = time.time()
         if cur_epoch % checkpoint_intvl == 0:
@@ -90,4 +88,13 @@ def training_loop(
                 savedir=log_dir,
                 batchnum=val_batch_size
             )
+            # Print log
+            print(
+                f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                f'mean(sec/batch): {(cur_time-start_time)/cur_epoch if cur_epoch else 0}, loss:' +
+                str(logs) + '\n',
+                file=log_file
+            )
             network.train()
+    print(f"Training Completed: EOF", file=log_file)
+    log_file.close()

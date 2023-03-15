@@ -7,7 +7,6 @@ from model import unet
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
-from forwardprojector.FP import FP
 # from forwardprojector.GenerateAmatrix import GenAmtrx
 device = torch.device('cuda')
 
@@ -25,9 +24,6 @@ def main():
     print(f"Data initialization: {config.dataname}")
     dataloader, valdataloader, num_channels = set_dataset(config)
 
-    # Generate Amatrix
-    print(f"Amatrix initialization...")
-    Amatrix = FP(config)
 
     # Check Resume?
     if config.resume:
@@ -59,9 +55,10 @@ def main():
         validation_set=valdataloader,
         network=network,
         optimizer=optimizer,
-        Amatrix=Amatrix,
         config=config
     )
+
+    print(f"Train Done!")
 
 
 if __name__ == "__main__":

@@ -2,42 +2,49 @@ import pydicom
 import torch
 from forwardprojector.FBP import FBP
 from config import get_config
+from PIL import Image
 import os
-import matplotlib.pyplot as plt
 import numpy as np
-import forwardprojector.utility
+from customlibs.chores import save_image
 import time
-import shutil
+import glob
+import tqdm
 import torch.nn.functional as F
 
 args = get_config()
-device = torch.device('cpu' if args.cpu else 'cuda')
+device = torch.device(args.device)
 args.num_split = 1
-binning_size = (4, 1)
-args.num_det = int(args.num_det / binning_size[0])
-args.det_interval *= binning_size[0]
-args.recon_interval = 0.7421875 * binning_size[0]
-args.recon_size = [int(args.recon_size[0] / binning_size[0]), int(args.recon_size[1] / binning_size[0])]
+# binning_size = (4, 1)
+# args.num_det = int(args.num_det / binning_size[0])
+# args.det_interval *= binning_size[0]
+# args.recon_interval = args.recon_interval * binning_size[0]
+# args.recon_size = [int(args.recon_size[0] / binning_size[0]), int(args.recon_size[1] / binning_size[0])]
 args.no_mask = True
-args.patient_ID = ['L067','L096','L109','L143','L192','L286','L291','L310','L333','L506']
 
 
 def main():
     FBP_model = FBP(args)
-    for patient_id in args.patient_ID:
-        path = os.path.join('/Dataset', patient_id, 'sinogram', '512views')
-        save_path = os.path.join('/Dataset', patient_id, 'recon_img', '512views', 'x'+str(binning_size[0]))
-        os.makedirs(save_path, exist_ok=True)
-        filenames = os.listdir(path)
-        print('save path is {}'.format(save_path))
-        for i in filenames:
-            sinogram = np.load(os.path.join(path, i))
-            sinogram = torch.FloatTensor(sinogram).unsqueeze(0).unsqueeze(0)
-            sinogram = F.avg_pool2d(sinogram.to(device), kernel_size=binning_size, stride=binning_size)
-            recon_img = FBP_model(sinogram)
-            recon_img = recon_img.squeeze().cpu().numpy()
-            np.save(os.path.join(save_path, i[:-4]+'.npy'), recon_img)
+
+    targetsino_list = glob.glob(os.path.join(args.datadir, args.originDatasetName + '_sinogram_' + str(args.view) + 'views', "*"))
+    save_path = os.path.join(args.datadir, args.originDatasetName + '_recon_' + str(args.view) + 'views')
+    os.makedirs(save_path, exist_ok=True)
+    print(f'save path is {save_path}')
+    for i in targetsino_list:
+        if os.path.splitext(i)[1] == '.npy':
+            print(f'Loading... {i}')
+            total_sinogram_np = np.load(i)
+            total_sinogram = torch.FloatTensor(total_sinogram_np).unsqueeze(0).permute(1, 0, 2, 3).to(torch.device(args.device))
+            for j in tqdm.trange(total_sinogram.shape[0]):
+                # sinogram = F.avg_pool2d(total_sinogram.to(device), kernel_size=binning_size, stride=binning_size)
+                # recon_img = FBP_model(total_sinogram[j, :, :, :].unsqueeze(0))
+                # recon_img = recon_img.squeeze().cpu().numpy()
+                # np.save(os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.npy'), recon_img)
+                np.save(os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'sino.npy'), total_sinogram_np[j, :, :])
+                # save_image(total_sinogram_np[j, :, :], os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'sino.png'), sino=True)
+                # save_image(recon_img, os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.png'), sino=False)
+                # Image.fromarray(recon_img[j, :, :], 'RGB').save(os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.png'))
 
 
 if __name__ == '__main__':
     main()
+    print("Jobs Done")
