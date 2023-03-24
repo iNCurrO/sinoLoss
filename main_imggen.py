@@ -36,13 +36,12 @@ def main():
             total_sinogram = torch.FloatTensor(total_sinogram_np).unsqueeze(0).permute(1, 0, 2, 3).to(torch.device(args.device))
             for j in tqdm.trange(total_sinogram.shape[0]):
                 # sinogram = F.avg_pool2d(total_sinogram.to(device), kernel_size=binning_size, stride=binning_size)
-                # recon_img = FBP_model(total_sinogram[j, :, :, :].unsqueeze(0))
-                # recon_img = recon_img.squeeze().cpu().numpy()
-                # np.save(os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.npy'), recon_img)
+                recon_img = FBP_model(total_sinogram[j, :, :, :].unsqueeze(0))
+                recon_img = recon_img.squeeze().cpu().numpy()
+                np.save(os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.npy'), recon_img)
                 np.save(os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'sino.npy'), total_sinogram_np[j, :, :])
                 # save_image(total_sinogram_np[j, :, :], os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'sino.png'), sino=True)
                 # save_image(recon_img, os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.png'), sino=False)
-                # Image.fromarray(recon_img[j, :, :], 'RGB').save(os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.png'))
 
 
 if __name__ == '__main__':

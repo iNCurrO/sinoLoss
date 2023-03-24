@@ -6,6 +6,9 @@ from PIL import Image
 
 
 def set_dir(config) -> str:
+    if not os.path.exists(config.logdir):
+        print("Log directory is not exist, just we configured it\n")
+        os.mkdir(config.logdir)
     logdir = os.listdir(config.logdir)
     logdir.sort()
     if os.listdir(config.logdir):

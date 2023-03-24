@@ -38,8 +38,8 @@ def main():
             toc = time.time()
             sinogram = sinogram.squeeze().cpu().numpy()
             np.save(os.path.join(save_path, os.path.basename(i)[:-4]+'.npy'), sinogram)
-            for j in range(sinogram.shape[0]):
-                save_image(sinogram[j, :, :], os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.png'), sino=False)
+            # for j in range(sinogram.shape[0]):
+            #     save_image(sinogram[j, :, :], os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.png'), sino=False)
             print('Done, time: {}'.format(toc-tic))
 
 

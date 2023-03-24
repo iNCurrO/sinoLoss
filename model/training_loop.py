@@ -1,8 +1,6 @@
 import os.path
 import time
-from typing import Tuple
-
-from tqdm import tqdm
+import vessl
 from customlibs.chores import save_network, save_images
 from model.loss import *
 
@@ -32,10 +30,10 @@ def training_loop(
     loss_func = total_Loss(device=device, network=network, config=config, loss_list=loss_list, loss_weight=loss_weights)
 
     # Initialize logs
-    log_file = open(os.path.join(log_dir, 'logs.txt'), 'w')
+    with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
+        print("Start Training... \n", file=log_file)
 
     # Train
-    print("Start Training...\nSaving Initial samples")
     val_noisy_img, val_target_img = next(iter(validation_set))
     val_batch_size = val_noisy_img.shape[0]
     save_images(val_target_img, epoch=0, tag="target", savedir=log_dir, batchnum=val_batch_size)
@@ -54,32 +52,55 @@ def training_loop(
     #     epoch=0, tag='noisy_sino', savedir=log_dir, batchnum=val_batch_size, sino=True
     # ) # TODO
     network.train().requires_grad_(True)
+
+    # Main Part
     start_time = time.time()
-    cur_time = time.time()
+    print(f"Entering training at {time.localtime(start_time)}")
     for cur_epoch in range(training_epoch):
         # iteration for one epcoh
-        with tqdm(training_set) as pbar:
-            for batch_idx, samples in enumerate(pbar):
-                optimizer.zero_grad()
-                [noisy_img, sino, target_img] = samples
-                logs = loss_func.accumulate_gradients(
-                    noisy_img.cuda(),
-                    target_img.cuda(),
-                    targetsino=sino.cuda()
-                )
-                pbar.set_description(
+        logs = ""
+        for batch_idx, samples in enumerate(training_set):
+            optimizer.zero_grad()
+            [noisy_img, sino, target_img] = samples
+            logs = loss_func.accumulate_gradients(
+                noisy_img.cuda(),
+                target_img.cuda(),
+                targetsino=sino.cuda()
+            )
+            if batch_idx % 99 == 0:
+                print(
                     f'Train Epoch: {cur_epoch}/{training_epoch},' +
-                    f'mean(sec/batch): {(cur_time-start_time)/cur_epoch if cur_epoch else 0}, loss:' +
+                    f'mean(sec/batch): {(time.time() - start_time) / cur_epoch if cur_epoch else 0}, loss:' +
                     str(logs) +
-                    f'ETA: {(cur_time-start_time)/cur_epoch*(training_epoch-cur_epoch) if cur_epoch else 0}'
+                    f'ETA: {(time.time() - start_time) / cur_epoch * (training_epoch - cur_epoch) if cur_epoch else 0}'
                 )
-                with torch.autograd.profiler.record_function("opt"):
-                    optimizer.step()
+            with torch.autograd.profiler.record_function("opt"):
+                optimizer.step()
+        # Print log
+        print(
+            f'Train Epoch: {cur_epoch}/{training_epoch},' +
+            f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
+            str(logs) + '\n'
+        )
+        with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
+            print(
+                f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
+                str(logs) + '\n',
+                file=log_file
+            )
+        vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
+
         # Save check point and evaluate
-        cur_time = time.time()
+        network.eval()
+        val_denoised_img = network(val_noisy_img.cuda())
+        vessl.log(payload={"denoised_images": [
+            vessl.Image(
+                data=val_denoised_img.cpu().detach().numpy(),
+                caption=f'Epoch:{cur_epoch}'
+            )
+        ]})
         if cur_epoch % checkpoint_intvl == 0:
-            network.eval()
-            val_denoised_img = network(val_noisy_img.cuda())
             save_network(network=network, epoch=cur_epoch, savedir=log_dir)
             save_images(
                 val_denoised_img.cpu().detach().numpy(),
@@ -88,13 +109,13 @@ def training_loop(
                 savedir=log_dir,
                 batchnum=val_batch_size
             )
-            # Print log
-            print(
-                f'Train Epoch: {cur_epoch}/{training_epoch},' +
-                f'mean(sec/batch): {(cur_time-start_time)/cur_epoch if cur_epoch else 0}, loss:' +
-                str(logs) + '\n',
-                file=log_file
-            )
-            network.train()
-    print(f"Training Completed: EOF", file=log_file)
-    log_file.close()
+        network.train()
+        vessl.progress((cur_epoch+1)/training_epoch)
+        # vessl.upload(log_dir)
+
+    # End Training. Close everything
+    with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
+        with torch.autograd.profiler as prof:
+            print(prof.key_averages(group_by_stack_n=5).table(sort_by='self_cpu_time_total', row_limit=5), file=log_file)
+        print(f"Training Completed: EOF", file=log_file)
+    vessl.finish()
