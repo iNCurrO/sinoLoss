@@ -80,7 +80,7 @@ class total_Loss:
                 )
             with torch.autograd.profiler.record_function(loss+"_backward"):
                 temp_loss.mul(self._loss_weight[idx]).backward()
-            logs[loss] = temp_loss.item
+            logs[loss] = temp_loss.item()
         return logs
 
 

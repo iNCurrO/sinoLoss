@@ -55,7 +55,13 @@ def training_loop(
 
     # Main Part
     start_time = time.time()
-    print(f"Entering training at {time.localtime(start_time)}")
+    print(
+        f"Entering training at {time.localtime(start_time).tm_mon}/{time.localtime(start_time).tm_mday} "
+        f"{time.localtime(start_time).tm_hour}h {time.localtime(start_time).tm_min}m "
+        f"{time.localtime(start_time).tm_sec}s"
+    )
+    with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
+        print(f"Entering training at {time.localtime(start_time)}", file=log_file)
     for cur_epoch in range(training_epoch):
         # iteration for one epcoh
         logs = ""
