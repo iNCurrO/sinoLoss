@@ -3,15 +3,16 @@ from model import unet
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
-import vessl
-device = torch.device('cuda')
-print("Initialize Vessl")
-vessl.configure(
-        organization_name="yonsei-medisys",
-        project_name="SinoLoss"
-    )
-vessl.init()
-print()
+if not os.name == 'nt':
+    import vessl
+    device = torch.device('cuda')
+    print("Initialize Vessl")
+    vessl.configure(
+            organization_name="yonsei-medisys",
+            project_name="SinoLoss"
+        )
+    vessl.init()
+    print()
 model_init = {
     'UNET': lambda config, img_channel: unet.Unet(n_channels=img_channel),
 }

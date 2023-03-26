@@ -1,7 +1,9 @@
 import os.path
 import time
-import vessl
+if not os.name == 'nt':
+    import vessl
 from customlibs.chores import save_network, save_images
+from customlibs.metrics import *
 from model.loss import *
 
 
@@ -75,37 +77,26 @@ def training_loop(
             )
             if batch_idx % 99 == 0:
                 print(
-                    f'Train Epoch: {cur_epoch}/{training_epoch},' +
-                    f'mean(sec/batch): {(time.time() - start_time) / cur_epoch if cur_epoch else 0}, loss:' +
+                    f'Train Epoch: {cur_epoch}/{training_epoch}, Batch: {batch_idx}/{len(training_set)}' +
+                    f'mean(sec/batch): '
+                    f'{(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) if cur_epoch else 0}'
+                    f', loss:' +
                     str(logs) +
-                    f'ETA: {(time.time() - start_time) / cur_epoch * (training_epoch - cur_epoch) if cur_epoch else 0}'
+                    f'ETA: {(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) * (training_epoch - cur_epoch - batch_idx / len(training_set)) if not (cur_epoch==0 and batch_idx==0) else 0}'
                 )
             with torch.autograd.profiler.record_function("opt"):
                 optimizer.step()
-        # Print log
-        print(
-            f'Train Epoch: {cur_epoch}/{training_epoch},' +
-            f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
-            str(logs) + '\n'
-        )
-        with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
-            print(
-                f'Train Epoch: {cur_epoch}/{training_epoch},' +
-                f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
-                str(logs) + '\n',
-                file=log_file
-            )
-        vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
 
         # Save check point and evaluate
         network.eval()
         val_denoised_img = network(val_noisy_img.cuda())
-        vessl.log(payload={"denoised_images": [
-            vessl.Image(
-                data=val_denoised_img.cpu().detach().numpy(),
-                caption=f'Epoch:{cur_epoch}'
-            )
-        ]})
+        if not os.name == 'nt':
+            vessl.log(payload={"denoised_images": [
+                vessl.Image(
+                    data=val_denoised_img.cpu().detach().numpy(),
+                    caption=f'Epoch:{cur_epoch}'
+                )
+            ]})
         if cur_epoch % checkpoint_intvl == 0:
             save_network(network=network, epoch=cur_epoch, savedir=log_dir)
             save_images(
@@ -115,13 +106,40 @@ def training_loop(
                 savedir=log_dir,
                 batchnum=val_batch_size
             )
+
+        # Print log
+        print(
+            f'Train Epoch: {cur_epoch}/{training_epoch},' +
+            f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
+            str(logs) + '\n' +
+            f'metrics: PSNR [{calculate_SSIM(val_denoised_img, val_noisy_img)}, '
+            f'SSIM [{calculate_psnr(val_denoised_img, val_noisy_img)}]]'
+        )
+        with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
+            print(
+                f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
+                str(logs) + '\n' +
+                f'metrics: PSNR [{calculate_SSIM(val_denoised_img, val_noisy_img)}, '
+                f'SSIM [{calculate_psnr(val_denoised_img, val_noisy_img)}]]',
+                file=log_file
+            )
+        if not os.name == 'nt':
+            vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
+            vessl.log(step=cur_epoch, payload={
+                "SSIM": calculate_psnr(val_denoised_img, val_noisy_img),
+                "PSNR": calculate_SSIM(val_denoised_img, val_noisy_img)
+            })
+
         network.train()
-        vessl.progress((cur_epoch+1)/training_epoch)
-        # vessl.upload(log_dir)
+        if not os.name == 'nt':
+            vessl.progress((cur_epoch+1)/training_epoch)
+            # vessl.upload(log_dir)
 
     # End Training. Close everything
     with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
         with torch.autograd.profiler as prof:
             print(prof.key_averages(group_by_stack_n=5).table(sort_by='self_cpu_time_total', row_limit=5), file=log_file)
         print(f"Training Completed: EOF", file=log_file)
-    vessl.finish()
+    if not os.name == 'nt':
+        vessl.finish()
