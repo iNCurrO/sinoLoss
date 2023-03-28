@@ -11,7 +11,6 @@ if not os.name == 'nt':
             organization_name="yonsei-medisys",
             project_name="SinoLoss"
         )
-    vessl.init()
     print()
 model_init = {
     'UNET': lambda config, img_channel: unet.Unet(n_channels=img_channel),
