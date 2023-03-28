@@ -138,7 +138,7 @@ def training_loop(
 
     # End Training. Close everything
     with open(os.path.join(log_dir, 'logs.txt'), 'w') as log_file:
-        with torch.autograd.profiler as prof:
+        with torch.autograd.profiler.profile(with_stack=True, profile_memory=True) as prof:
             print(prof.key_averages(group_by_stack_n=5).table(sort_by='self_cpu_time_total', row_limit=5), file=log_file)
         print(f"Training Completed: EOF", file=log_file)
     if not os.name == 'nt':
