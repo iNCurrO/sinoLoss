@@ -3,9 +3,9 @@ from model import unet
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
+
 if not os.name == 'nt':
     import vessl
-    device = torch.device('cuda')
     print("Initialize Vessl")
     vessl.configure(
             organization_name="yonsei-medisys",
@@ -21,29 +21,28 @@ def main():
     # Parse configuration
     config = get_config()
 
+
     # initialize dataset
     print(f"Data initialization: {config.dataname}\n")
     dataloader, valdataloader, num_channels = set_dataset(config)
+
+    # Initiialize model
+    print(f'Network initialization: {config.mode}\n')
+    network = model_init[config.model.upper()](config, num_channels)
+
+    # initialize optimzier
+    optimizer = set_optimizer(config, network)
 
     # Check Resume?
     if config.resume:
         print(f"Resume from: {config.resume}\n")
         __savedir__ = set_dir(config) + f"_resume{config.resume}"
-        network, optimizer = resume_network(config.resume)
-        # TODO make resume (Including load parameters)
-        pass
+        print(f"New logs will be archived at the {__savedir__}\n")
+        resume_network(config.resume, network, optimizer, config)
     else:
         # Make dir
         __savedir__ = set_dir(config)
         print(f"logs will be archived at the {__savedir__}\n")
-
-        # initialize model
-        print(f"Network initialization: {config.model}\n")
-        network = model_init[config.model.upper()](config, num_channels).cuda()
-        save_parameters(network.hyperparams) # TODO make save_parameters
-
-        # Set option
-        optimizer = set_optimizer(config, network)
 
     training_loop(
         log_dir=__savedir__,

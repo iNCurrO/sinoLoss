@@ -28,16 +28,46 @@ def set_dir(config) -> str:
     return __savedir__
 
 
-def save_parameters(parameters):
-    pass
+def resume_network(resume, network, optimizer, config):
+    def find_network(resume_file):
+        dir_num = resume_file.split('-')[0]
+        cp_num = resume_file.split('-')[1]
+        try:
+            logdirs = [filename for filename in os.listdir(config.logdir) if filename.startswith(dir_num)]
+            if not len(logdirs) == 1:
+                raise FileNotFoundError
+            else:
+                logdir = logdirs[0]
+            fn = None
+            for filename in os.listdir(os.path.join(config.logdir, logdir)):
+                if filename.startswith(cp_num) and os.path.isfile(filename):
+                    if fn is None:
+                        fn = filename
+                    else:
+                        raise FileNotFoundError
+            return fn
+        except FileNotFoundError:
+            print(f'Not founded for {resume_file}, Train with random init.\n')
+            return None
+
+    resume_file = find_network(resume_file=resume)
+    if resume_file is not None:
+        ckpt = torch.load(resume_file)
+        network.load_state_dict(ckpt['model_state_dict'])
+        if ckpt['optimizer_state_dict']:
+            optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+        else:
+            print(f'Warning! there is no optimizer save file in {resume_file}, thus optimizer is going init.\n')
 
 
-def save_network(network, epoch, savedir):
-    saving_data = dict(network=network)
+def save_network(network, optimizer, epoch, savedir):
+    snapshot_pt = os.path.join(savedir, f'network-{epoch}.pt')
     print(f"Saving network... Dir: {savedir} // Epoch: {epoch}")
-    snapshot_pkl = os.path.join(savedir, f'network-{epoch}.pkl')
-    with open(snapshot_pkl, 'wb') as f:
-        pickle.dump(saving_data, f)
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': network.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict()
+    }, snapshot_pt)
     print(f"Save complete!")
 
 
@@ -94,10 +124,13 @@ def set_optimizer(config, model):
         optimizer = torch.optim.AdamW(model.parameters(), lr=config.learningrate, weight_decay=config.lrdecay)
     else:
         optimizer = None
-        print("Error! undefined optimizer name for GAN: {}".format(config.optimizer))
+        print("Error! undefined optimizer name for this codes: {}".format(config.optimizer))
         quit()
     return optimizer
 
 
-def resume_network(resume):
-    pass
+def lprint(txt, log_dir):
+    print(txt)
+    with open(os.path.join(log_dir, 'logs.txt'), 'a') as log_file:
+        print(txt, file=log_file)
+

@@ -22,6 +22,7 @@ class total_Loss:
             config,
             loss_list: Tuple[str] = tuple(["MSE"]),
             loss_weight: Tuple[float] = tuple([1.]),
+            Amatrix=None
     ):
         self._device = device
         self._network = network
@@ -31,22 +32,19 @@ class total_Loss:
 
         self._loss_list = loss_list
         if "sinoloss_MSE" in loss_list or "sinoloss_MAE" in loss_list:
-            # Generate Amatrix
-            print(f"Amatrix initialization...")
-            self._Amatrix = FP(config)
-            print(f"Amatrix initialization finished!")
+            self._Amatrix = Amatrix
         else:
             self._Amatrix = None
 
         if "VGG" in loss_list:
             print(f"loading VGG loss")
-            self._VGG = customlibs.predefined_loss.VGGloss().cuda()
+            self._VGG = customlibs.predefined_loss.VGGloss().to(self._device)
         else:
             self._VGG = None
 
         if "observer" in loss_list:
             print(f"loading observer loss")
-            self._observer = customlibs.predefined_loss.observerloss(config).cuda()
+            self._observer = customlibs.predefined_loss.observerloss(config).to(self._device)
         else:
             self._observer = None
 

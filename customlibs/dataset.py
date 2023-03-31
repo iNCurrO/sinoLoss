@@ -110,7 +110,8 @@ class TotalDataset(Dataset):
         self._targetdataset = targetdataset
         if self._sinodataset is not None:
             self._datasets = [self._inputdataset, self._sinodataset, self._targetdataset]
-            assert len(self._inputdataset) == len(self._sinodataset)
+            assert len(self._inputdataset) == len(self._sinodataset),\
+                f"{len(self._inputdataset)},{len(self._sinodataset)}"
         else:
             self._datasets = [self._inputdataset, self._targetdataset]
         assert len(self._inputdataset) == len(self._targetdataset)
@@ -144,10 +145,11 @@ def set_dataset(config):
 
     # Dataset for validation
     __inputdir__ = os.path.join(basedir, "VSparseview_recon_val")
+    __sinodir__ = os.path.join(basedir, "VSparseview_sino_val")
     __targetdir__ = os.path.join(basedir, "Fullview_recon_val")
     ds_v = TotalDataset(
             inputdataset=sinogramDataset(path=__inputdir__),
-            sinodataset=None,
+            sinodataset=sinogramDataset(path=__sinodir__),
             targetdataset=sinogramDataset(path=__targetdir__)
         )
 

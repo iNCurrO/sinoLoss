@@ -1,6 +1,16 @@
 import torch
 import cv2
 import numpy as np
+from torch.nn.functional import mse_loss
+
+
+def calculate_sinoMSE(img1, targetsino, Amatrix):
+    inputsino = Amatrix(img1)
+    return mse_loss(inputsino, targetsino)
+
+
+def calculate_MSE(img1, img2):
+    return mse_loss(img1, img2)
 
 
 def calculate_psnr(img1, img2):
@@ -10,10 +20,10 @@ def calculate_psnr(img1, img2):
 
 
 def calculate_SSIM(img1, img2):
-    C1 = 0.01 ** 2
-    C2 = 0.03 ** 2
-    img1 = img1.detach().cpu().numpy()
-    img2 = img2.detach().cpu().numpy()
+    C1 = (0.01) ** 2
+    C2 = (0.03) ** 2
+    img1 = torch.clamp(img1, min=0.0, max=1.0).detach().cpu().numpy()
+    img2 = torch.clamp(img2, min=0.0, max=1.0).detach().cpu().numpy()
     img1 = img1.astype(np.float64).squeeze()
     img2 = img2.astype(np.float64).squeeze()
     kernel = cv2.getGaussianKernel(11, 1.5)
