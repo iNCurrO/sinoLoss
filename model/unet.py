@@ -38,15 +38,15 @@ class Unet(nn.Module):
         logits = self.outc(x)
         return logits
 
-    def use_checkpointing(self):
-        self.inc = checkpoint.checkpoint(self.inc)
-        self.down1 = checkpoint.checkpoint(self.down1)
-        self.down2 = checkpoint.checkpoint(self.down2)
-        self.down3 = checkpoint.checkpoint(self.down3)
-        self.down4 = checkpoint.checkpoint(self.down4)
-        self.up1 = checkpoint.checkpoint(self.up1)
-        self.up2 = checkpoint.checkpoint(self.up2)
-        self.up3 = checkpoint.checkpoint(self.up3)
-        self.up4 = checkpoint.checkpoint(self.up4)
-        self.outc = checkpoint.checkpoint(self.outc)
+    # def use_checkpointing(self):
+    #     self.inc = checkpoint.checkpoint(self.inc)
+    #     self.down1 = checkpoint.checkpoint(self.down1)
+    #     self.down2 = checkpoint.checkpoint(self.down2)
+    #     self.down3 = checkpoint.checkpoint(self.down3)
+    #     self.down4 = checkpoint.checkpoint(self.down4)
+    #     self.up1 = checkpoint.checkpoint(self.up1)
+    #     self.up2 = checkpoint.checkpoint(self.up2)
+    #     self.up3 = checkpoint.checkpoint(self.up3)
+    #     self.up4 = checkpoint.checkpoint(self.up4)
+    #     self.outc = checkpoint.checkpoint(self.outc)
 

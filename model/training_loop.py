@@ -72,79 +72,79 @@ def training_loop(
         f"{time.localtime(start_time).tm_sec}s",
         log_dir=log_dir
     )
-    for cur_epoch in range(training_epoch):
-        # iteration for one epcoh
-        logs = ""
-        for batch_idx, samples in enumerate(training_set):
-            optimizer.zero_grad()
-            [noisy_img, sino, target_img] = samples
-            logs = loss_func.accumulate_gradients(
-                noisy_img.to(device),
-                target_img.to(device),
-                targetsino=sino.to(device)
-            )
-            if batch_idx % 99 == 0:
-                lprint(
-                    f'Train Epoch: {cur_epoch}/{training_epoch}, Batch: {batch_idx}/{len(training_set)}' +
-                    f'mean(sec/batch): '
-                    f'{(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) if cur_epoch else 0}'
-                    f', loss:' +
-                    str(logs) +
-                    f'ETA: {(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) * (training_epoch - cur_epoch - batch_idx / len(training_set)) if not (cur_epoch==0 and batch_idx==0) else 0}',
-                    log_dir=log_dir
+
+    with torch.autograd.profiler.profile(with_stack=True, profile_memory=True) as prof:
+        for cur_epoch in range(training_epoch):
+            # iteration for one epcoh
+            logs = ""
+            for batch_idx, samples in enumerate(training_set):
+                optimizer.zero_grad()
+                [noisy_img, sino, target_img] = samples
+                logs = loss_func.accumulate_gradients(
+                    noisy_img.to(device),
+                    target_img.to(device),
+                    targetsino=sino.to(device)
                 )
-            with torch.autograd.profiler.record_function("opt"):
-                optimizer.step()
+                if batch_idx % 99 == 0:
+                    lprint(
+                        f'Train Epoch: {cur_epoch}/{training_epoch}, Batch: {batch_idx}/{len(training_set)}' +
+                        f'mean(sec/batch): '
+                        f'{(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) if cur_epoch else 0}'
+                        f', loss:' +
+                        str(logs) +
+                        f'ETA: {(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) * (training_epoch - cur_epoch - batch_idx / len(training_set)) if not (cur_epoch==0 and batch_idx==0) else 0}',
+                        log_dir=log_dir
+                    )
+                with torch.autograd.profiler.record_function("opt"):
+                    optimizer.step()
 
-        # Save check point and evaluate
-        network.eval()
-        val_denoised_img = network(val_noisy_img.to(device))
+            # Save check point and evaluate
+            network.eval()
+            val_denoised_img = network(val_noisy_img.to(device))
 
-        # Print log
-        lprint(
-            f'Train Epoch: {cur_epoch}/{training_epoch},' +
-            f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
-            str(logs) + '\n' +
-            f'metrics: PSNR [{calculate_psnr(val_denoised_img, val_noisy_img)}], '
-            f'SSIM [{calculate_SSIM(val_denoised_img, val_noisy_img)}], '
-            f'MSE: [{calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device))}], '
-            f'sinoMSE: [{calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix)}]',
-            log_dir=log_dir
-        )
-        if not os.name == 'nt':
-            vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
-            vessl.log(step=cur_epoch, payload={
-                "SSIM": calculate_SSIM(val_denoised_img, val_noisy_img),
-                "PSNR": calculate_psnr(val_denoised_img, val_noisy_img),
-                "MSE": calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)),
-                "sinoMSE": calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix),
-            })
-
-        if not os.name == 'nt':
-            vessl.log(payload={"denoised_images": [
-                vessl.Image(
-                    data=val_denoised_img.cpu().detach().numpy(),
-                    caption=f'Epoch:{cur_epoch}'
-                )
-            ]})
-        if cur_epoch % checkpoint_intvl == 0:
-            save_network(network=network, epoch=cur_epoch, optimizer=optimizer, savedir=log_dir)
-            save_images(
-                val_denoised_img.cpu().detach().numpy(),
-                epoch=cur_epoch+1,
-                tag="denoised",
-                savedir=log_dir,
-                batchnum=val_batch_size
+            # Print log
+            lprint(
+                f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
+                str(logs) + '\n' +
+                f'metrics: PSNR [{calculate_psnr(val_denoised_img, val_noisy_img)}], '
+                f'SSIM [{calculate_SSIM(val_denoised_img, val_noisy_img)}], '
+                f'MSE: [{calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device))}], '
+                f'sinoMSE: [{calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix)}]',
+                log_dir=log_dir
             )
+            if not os.name == 'nt':
+                vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
+                vessl.log(step=cur_epoch, payload={
+                    "SSIM": calculate_SSIM(val_denoised_img, val_noisy_img),
+                    "PSNR": calculate_psnr(val_denoised_img, val_noisy_img),
+                    "MSE": calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)),
+                    "sinoMSE": calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix),
+                })
 
-        network.train()
-        if not os.name == 'nt':
-            vessl.progress((cur_epoch+1)/training_epoch)
-            # vessl.upload(log_dir)
+            if not os.name == 'nt':
+                vessl.log(payload={"denoised_images": [
+                    vessl.Image(
+                        data=val_denoised_img.cpu().detach().numpy(),
+                        caption=f'Epoch:{cur_epoch}'
+                    )
+                ]})
+            if cur_epoch % checkpoint_intvl == 0:
+                save_network(network=network, epoch=cur_epoch, optimizer=optimizer, savedir=log_dir)
+                save_images(
+                    val_denoised_img.cpu().detach().numpy(),
+                    epoch=cur_epoch+1,
+                    tag="denoised",
+                    savedir=log_dir,
+                    batchnum=val_batch_size
+                )
+
+            network.train()
+            if not os.name == 'nt':
+                vessl.progress((cur_epoch+1)/training_epoch)
+                # vessl.upload(log_dir)
 
     # End Training. Close everything
-    with torch.autograd.profiler.profile(with_stack=True, profile_memory=True) as prof:
-        pass
     lprint(prof.key_averages(group_by_stack_n=5).table(sort_by='self_cpu_time_total', row_limit=5), log_dir=log_dir)
     with open(os.path.join(log_dir, 'logs.txt'), 'a') as log_file:
         print(f"Training Completed: EOF", file=log_file)

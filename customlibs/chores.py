@@ -18,8 +18,9 @@ def set_dir(config) -> str:
     else:
         dirnum = 0
     __savedir__ = f"{dirnum:03}"
+    losses = ""
     for i, lossname in enumerate(config.losses):
-        losses = str(config.weights[i]) + lossname
+        losses += str(config.weights[i]) + lossname
     __savedir__ = __savedir__ + "_" + str(config.model) + "_" + losses + "_" + config.dataname
     if not os.name == 'nt':
         vessl.init(message=config.computername + "_" + __savedir__)
@@ -76,7 +77,7 @@ def save_images(input_images, tag, epoch, savedir, batchnum, sino=False):
     nx = int(np.ceil(np.sqrt(batchnum)))
     save_image_grid(
         input_images,
-        os.path.join(savedir, f'samples-{epoch}-{tag}.png'), grid_size=(nx, nx), sino=sino
+        os.path.join(savedir, f'samples-{epoch:04}-{tag}.png'), grid_size=(nx, nx), sino=sino
     )
     print(f"Save complete!\n ")
 

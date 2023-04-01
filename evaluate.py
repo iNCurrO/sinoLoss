@@ -51,6 +51,7 @@ def evaluate():
         total_MSE += calculate_MSE(denoised_img, noisy_img)/(batch_idx-cur_idx)
         total_sinoMSE += calculate_sinoMSE(denoised_img, sino, Amatrix)/(batch_idx-cur_idx)
         final_idx = batch_idx
+        # TODO Save denoised images
     log_str = f'Finished! SSIM: {total_SSIM}, PSNR: {total_PSNR}, MSE in image domain: {total_MSE}, ' \
               f'MSE in sino domain: {total_sinoMSE}\nFor total {final_idx}'
     print(log_str)
