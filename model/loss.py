@@ -67,6 +67,7 @@ class total_Loss:
 
     def accumulate_gradients(self, input_img, target_img, targetsino=None):
         logs = dict()
+        total_loss = 0.0
         with torch.autograd.profiler.record_function("Forward"):
             denoised_img = self._network(input_img.requires_grad_(True))
         for idx, loss in enumerate(self._loss_list):
@@ -78,8 +79,9 @@ class total_Loss:
                     prefunc=self._prefunc_loss,
                 )
             with torch.autograd.profiler.record_function(loss+"_backward"):
-                temp_loss.mul(self._loss_weight[idx]).backward()
+                total_loss += temp_loss.mul(self._loss_weight[idx])
             logs[loss] = temp_loss.item()
+        total_loss.backward()
         return logs
 
 
