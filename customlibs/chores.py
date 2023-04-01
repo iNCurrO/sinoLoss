@@ -7,7 +7,7 @@ if not os.name == 'nt':
     import vessl
 
 
-def set_dir(config) -> str:
+def set_dir(config):
     if not os.path.exists(config.logdir):
         print("Log directory is not exist, just we configured it\n")
         os.mkdir(config.logdir)
@@ -26,7 +26,7 @@ def set_dir(config) -> str:
         vessl.init(message=config.computername + "_" + __savedir__)
     __savedir__ = os.path.join(config.logdir, __savedir__)
     os.mkdir(__savedir__)
-    return __savedir__
+    return [__savedir__, dirnum]
 
 
 def resume_network(resume, network, optimizer, config):

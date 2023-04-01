@@ -12,7 +12,7 @@ model_init = {
 }
 
 
-def evaluate():
+def evaluate(resumenum=None):
     # initialize dataset
     print(f"Data initialization: {config.dataname}\n")
     dataloader, valdataloader, num_channels = set_dataset(config)
@@ -32,8 +32,15 @@ def evaluate():
     # Set log
     print(f"Resume from: {config.resume}\n")
     __savedir__ = set_dir(config)
+
+    if not os.path.exists(os.path.join(__savedir__, 'test_result')):
+        os.mkdir(os.path.join(__savedir__, 'test_result'))
+
     print(f"New logs will be archived at the {__savedir__}\n")
-    resume_network(config.resume, network, optimizer, config)
+    if not resumenum:
+        resume_network(resume=config.resume, network=network, optimizer=optimizer, config=config)
+    else:
+        resume_network(resume=resumenum, network=network, optimizer=optimizer, config=config)
     network.eval()
 
     total_PSNR = 0.0
@@ -51,7 +58,8 @@ def evaluate():
         total_MSE += calculate_MSE(denoised_img, noisy_img)/(batch_idx-cur_idx)
         total_sinoMSE += calculate_sinoMSE(denoised_img, sino, Amatrix)/(batch_idx-cur_idx)
         final_idx = batch_idx
-        # TODO Save denoised images
+        save_images(noisy_img, str(batch_idx), 'Fin', os.path.join(__savedir__, 'test_result'), config.valbatchsize)
+
     log_str = f'Finished! SSIM: {total_SSIM}, PSNR: {total_PSNR}, MSE in image domain: {total_MSE}, ' \
               f'MSE in sino domain: {total_sinoMSE}\nFor total {final_idx}'
     print(log_str)

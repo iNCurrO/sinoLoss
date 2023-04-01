@@ -3,6 +3,7 @@ from model import unet
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
+from evaluate import evaluate
 
 if not os.name == 'nt':
     import vessl
@@ -33,15 +34,15 @@ def main():
     # initialize optimzier
     optimizer = set_optimizer(config, network)
 
+    __savedir__, __dirnum__ = set_dir(config)
     # Check Resume?
     if config.resume:
         print(f"Resume from: {config.resume}\n")
-        __savedir__ = set_dir(config) + f"_resume{config.resume}"
+        __savedir__ += f"_resume{config.resume}"
         print(f"New logs will be archived at the {__savedir__}\n")
         resume_network(config.resume, network, optimizer, config)
     else:
         # Make dir
-        __savedir__ = set_dir(config)
         print(f"logs will be archived at the {__savedir__}\n")
 
     training_loop(
@@ -58,6 +59,9 @@ def main():
     )
 
     print(f"Train Done!")
+
+    evaluate(resumenum=str(__dirnum__)+'-'+str(config.trainingepoch))
+    print(f"Testing Done!")
 
 
 if __name__ == "__main__":
