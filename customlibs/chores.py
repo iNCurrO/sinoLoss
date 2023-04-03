@@ -31,7 +31,7 @@ def set_dir(config):
 
 def resume_network(resume, network, optimizer, config):
     def find_network(resume_file):
-        dir_num = resume_file.split('-')[0]
+        dir_num =resume_file.split('-')[0]
         cp_num = resume_file.split('-')[1]
         try:
             logdirs = [filename for filename in os.listdir(config.logdir) if filename.startswith(dir_num)]
@@ -41,7 +41,7 @@ def resume_network(resume, network, optimizer, config):
                 logdir = logdirs[0]
             fn = None
             for filename in os.listdir(os.path.join(config.logdir, logdir)):
-                if filename.startswith(cp_num) and os.path.isfile(filename):
+                if filename.startswith('network-' + cp_num) and os.path.isfile(filename):
                     if fn is None:
                         fn = filename
                     else:
@@ -77,7 +77,7 @@ def save_images(input_images, tag, epoch, savedir, batchnum, sino=False):
     nx = int(np.ceil(np.sqrt(batchnum)))
     save_image_grid(
         input_images,
-        os.path.join(savedir, f'samples-{epoch:04}-{tag}.png'), grid_size=(nx, nx), sino=sino
+        os.path.join(savedir, f'samples-{int(epoch):04}-{tag}.png'), grid_size=(nx, nx), sino=sino
     )
     print(f"Save complete!\n ")
 

@@ -22,7 +22,6 @@ def main():
     # Parse configuration
     config = get_config()
 
-
     # initialize dataset
     print(f"Data initialization: {config.dataname}\n")
     dataloader, valdataloader, num_channels = set_dataset(config)
@@ -60,7 +59,7 @@ def main():
 
     print(f"Train Done!")
 
-    evaluate(resumenum=str(__dirnum__)+'-'+str(config.trainingepoch))
+    evaluate(resumenum=str(__dirnum__)+'-'+str(config.trainingepoch), __savedir__=__savedir__)
     print(f"Testing Done!")
 
 

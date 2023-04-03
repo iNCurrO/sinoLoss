@@ -107,19 +107,21 @@ def training_loop(
                 f'Train Epoch: {cur_epoch}/{training_epoch},' +
                 f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
                 str(logs) + '\n' +
-                f'metrics: PSNR [{calculate_psnr(val_denoised_img, val_noisy_img)}], '
-                f'SSIM [{calculate_SSIM(val_denoised_img, val_noisy_img)}], '
-                f'MSE: [{calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device))}], '
-                f'sinoMSE: [{calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix)}]',
+                f'metrics: PSNR [{calculate_psnr(val_denoised_img, val_noisy_img).detach().item()}], '
+                f'SSIM [{calculate_SSIM(val_denoised_img, val_noisy_img).detach().item()}], '
+                f'MSE: [{calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item()}], '
+                f'sinoMSE: [{calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix).detach().item()}]',
                 log_dir=log_dir
             )
             if not os.name == 'nt':
                 vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
                 vessl.log(step=cur_epoch, payload={
-                    "SSIM": calculate_SSIM(val_denoised_img, val_noisy_img),
-                    "PSNR": calculate_psnr(val_denoised_img, val_noisy_img),
-                    "MSE": calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)),
-                    "sinoMSE": calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix),
+                    "SSIM": calculate_SSIM(val_denoised_img, val_noisy_img).detach().item(),
+                    "PSNR": calculate_psnr(val_denoised_img, val_noisy_img).detach().item(),
+                    "MSE": calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item(),
+                    "sinoMSE": calculate_sinoMSE(
+                        val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix
+                    ).detach().item(),
                 })
 
             if not os.name == 'nt':
