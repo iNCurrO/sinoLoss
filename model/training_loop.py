@@ -1,5 +1,8 @@
 import os.path
 import time
+
+import torch
+
 if not os.name == 'nt':
     import vessl
 from customlibs.chores import save_network, save_images, lprint
@@ -89,7 +92,7 @@ def training_loop(
                     lprint(
                         f'Train Epoch: {cur_epoch}/{training_epoch}, Batch: {batch_idx}/{len(training_set)}' +
                         f'mean(sec/batch): '
-                        f'{(time.time() - start_time) / (cur_epoch + (batch_idx+config.batchsize) / len(training_set)) if cur_epoch else 0}'
+                        f'{(time.time() - start_time) / (cur_epoch + (batch_idx+config.batchsize) / len(training_set))}'
                         f', loss:' +
                         str(logs) +
                         f'ETA: {(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) * (training_epoch - cur_epoch - batch_idx / len(training_set)) if not (cur_epoch==0 and batch_idx==0) else 0}',
@@ -100,47 +103,47 @@ def training_loop(
 
             # Save check point and evaluate
             network.eval()
-            val_denoised_img = network(val_noisy_img.to(device))
+            with torch.no_grad():
+                val_denoised_img = network(val_noisy_img.to(device))
 
-            # Print log
-            lprint(
-                f'Train Epoch: {cur_epoch}/{training_epoch},' +
-                f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
-                str(logs) + '\n' +
-                f'metrics: PSNR [{calculate_psnr(val_denoised_img, val_noisy_img)}], '
-                f'SSIM [{calculate_SSIM(val_denoised_img, val_noisy_img)}], '
-                f'MSE: [{calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item()}], '
-                f'sinoMSE: [{calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix).detach().item()}]',
-                log_dir=log_dir
-            )
-            if not os.name == 'nt':
-                vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
-                vessl.log(step=cur_epoch, payload={
-                    "SSIM": calculate_SSIM(val_denoised_img, val_noisy_img),
-                    "PSNR": calculate_psnr(val_denoised_img, val_noisy_img),
-                    "MSE": calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item(),
-                    "sinoMSE": calculate_sinoMSE(
-                        val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix
-                    ).detach().item(),
-                })
-
-            if not os.name == 'nt':
-                vessl.log(payload={"denoised_images": [
-                    vessl.Image(
-                        data=val_denoised_img.cpu().detach().numpy(),
-                        caption=f'Epoch:{cur_epoch:4}'
-                    )
-                ]})
-            if cur_epoch % checkpoint_intvl == 0:
-                save_network(network=network, epoch=cur_epoch, optimizer=optimizer, savedir=log_dir)
-                save_images(
-                    val_denoised_img.cpu().detach().numpy(),
-                    epoch=cur_epoch+1,
-                    tag="denoised",
-                    savedir=log_dir,
-                    batchnum=val_batch_size
+                # Print log
+                lprint(
+                    f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                    f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
+                    str(logs) + '\n' +
+                    f'metrics: PSNR [{calculate_psnr(val_denoised_img, val_noisy_img)}], '
+                    f'SSIM [{calculate_SSIM(val_denoised_img, val_noisy_img)}], '
+                    f'MSE: [{calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item()}], '
+                    f'sinoMSE: [{calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix).detach().item()}]',
+                    log_dir=log_dir
                 )
+                if not os.name == 'nt':
+                    vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
+                    vessl.log(step=cur_epoch, payload={
+                        "SSIM": calculate_SSIM(val_denoised_img, val_noisy_img),
+                        "PSNR": calculate_psnr(val_denoised_img, val_noisy_img),
+                        "MSE": calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item(),
+                        "sinoMSE": calculate_sinoMSE(
+                            val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix
+                        ).detach().item(),
+                    })
 
+                if not os.name == 'nt':
+                    vessl.log(payload={"denoised_images": [
+                        vessl.Image(
+                            data=val_denoised_img.cpu().detach().numpy(),
+                            caption=f'Epoch:{cur_epoch:4}'
+                        )
+                    ]})
+                if cur_epoch % checkpoint_intvl == 0:
+                    save_network(network=network, epoch=cur_epoch, optimizer=optimizer, savedir=log_dir)
+                    save_images(
+                        val_denoised_img.cpu().detach().numpy(),
+                        epoch=cur_epoch+1,
+                        tag="denoised",
+                        savedir=log_dir,
+                        batchnum=val_batch_size
+                    )
             network.train()
             if not os.name == 'nt':
                 vessl.progress((cur_epoch+1)/training_epoch)
