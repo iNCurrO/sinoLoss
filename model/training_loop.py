@@ -128,7 +128,7 @@ def training_loop(
                 vessl.log(payload={"denoised_images": [
                     vessl.Image(
                         data=val_denoised_img.cpu().detach().numpy(),
-                        caption=f'Epoch:{cur_epoch}'
+                        caption=f'Epoch:{cur_epoch:4}'
                     )
                 ]})
             if cur_epoch % checkpoint_intvl == 0:
