@@ -70,6 +70,7 @@ proj_arg.add_argument('--det_lets', type=int, default=3, help='number of detecto
 
 # System parameters
 sysparm_arg = add_argument_group('System')
+sysparm_arg.add_argument('--computername', type=str, default='tempcom')
 sysparm_arg.add_argument('--logdir', type=str, default='./logs')
 sysparm_arg.add_argument('--trainingepoch', type=int, default=200)
 sysparm_arg.add_argument('--optimizer', type=str, default="ADAM", choices=["ADAM", "ADAMW"])

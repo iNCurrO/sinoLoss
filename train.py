@@ -22,6 +22,7 @@ def main():
     # Parse configuration
     config = get_config()
 
+
     # initialize dataset
     print(f"Data initialization: {config.dataname}\n")
     dataloader, valdataloader, num_channels = set_dataset(config)
@@ -43,6 +44,16 @@ def main():
     else:
         # Make dir
         print(f"logs will be archived at the {__savedir__}\n")
+
+    if not os.name == 'nt':
+        hp = {
+            "optimizer": config.optimizer,
+            "LR": config.learningrate,
+            "LR_decay": config.lrdecay,
+            "model_size": network.base_channel(),
+            "Resume_from": config.resume
+        }
+        vessl.hp.update(hp)
 
     training_loop(
         log_dir=__savedir__,

@@ -4,23 +4,27 @@ import torch.nn as nn
 
 
 class Unet(nn.Module):
-    def __init__(self, n_channels: int, interp: str = None, act_func: str = "ReLU"):
+    def __init__(self, n_channels: int, interp: str = None, act_func: str = "ReLU", basechannel=64):
         super(Unet, self).__init__()
         self._n_channels = n_channels
         self._interp = interp
         self._act_func = act_func
+        self._base_channel = basechannel
 
-        self.inc = (DoubleConvBlock(n_channels, 64, act_func=self._act_func))
-        self.down1 = (DownSampling(64, 128, act_func=self._act_func))
-        self.down2 = (DownSampling(128, 256, act_func=self._act_func))
-        self.down3 = (DownSampling(256, 512, act_func=self._act_func))
+        self.inc = (DoubleConvBlock(n_channels, self._base_channel, act_func=self._act_func))
+        self.down1 = (DownSampling(self._base_channel, 2*self._base_channel, act_func=self._act_func))
+        self.down2 = (DownSampling(2*self._base_channel, (2**2)*self._base_channel, act_func=self._act_func))
+        self.down3 = (DownSampling((2**2)*self._base_channel, (2**3)*self._base_channel, act_func=self._act_func))
         factor = 2 if UpSampling.is_available_interp(interp=self._interp) else 1
-        self.down4 = (DownSampling(512, 1024 // factor, act_func=self._act_func))
-        self.up1 = (UpSampling(1024, 512 // factor, self._interp, act_func=self._act_func))
-        self.up2 = (UpSampling(512, 256 // factor, self._interp, act_func=self._act_func))
-        self.up3 = (UpSampling(256, 128 // factor, self._interp, act_func=self._act_func))
-        self.up4 = (UpSampling(128, 64, self._interp, act_func=self._act_func))
-        self.outc = (LastConv(64, self._n_channels))
+        self.down4 = (DownSampling((2**3)*self._base_channel, (2**4)*self._base_channel // factor, act_func=self._act_func))
+        self.up1 = (UpSampling((2**4)*self._base_channel, (2**3)*self._base_channel // factor, self._interp, act_func=self._act_func))
+        self.up2 = (UpSampling((2**3)*self._base_channel, (2**2)*self._base_channel // factor, self._interp, act_func=self._act_func))
+        self.up3 = (UpSampling((2**2)*self._base_channel, 2*self._base_channel // factor, self._interp, act_func=self._act_func))
+        self.up4 = (UpSampling(2*self._base_channel, self._base_channel, self._interp, act_func=self._act_func))
+        self.outc = (LastConv(self._base_channel, self._n_channels))
+
+    def base_channel(self):
+        return self._base_channel
 
     def hyperparams(self):
         return {'n_channels': self._n_channels, 'interp': self._interp, 'act_func': self._act_func}

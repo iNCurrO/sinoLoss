@@ -1,0 +1,9 @@
+vessl~=0.1.83
+torchvision~=0.11.2
+pyspng~=0.1.1
+opencv-python~=4.7.0.72
+h5py~=3.8.0
+pydicom~=2.3.1
+tqdm~=4.64.1
+gdown~=4.6.4
+mat73~=0.60
