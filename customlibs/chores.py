@@ -73,13 +73,11 @@ def save_network(network, optimizer, epoch, savedir):
 
 
 def save_images(input_images, tag, epoch, savedir, batchnum, sino=False):
-    print(f"Saving samples...")
     nx = int(np.ceil(np.sqrt(batchnum)))
     save_image_grid(
         input_images,
         os.path.join(savedir, f'samples-{int(epoch):04}-{tag}.png'), grid_size=(nx, nx), sino=sino
     )
-    print(f"Save complete!\n ")
 
 
 def save_image(img, fname, sino=False):

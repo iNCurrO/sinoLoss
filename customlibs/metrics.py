@@ -15,7 +15,8 @@ def calculate_MSE(img1, img2):
 
 def calculate_psnr(img1, img2):
     mse = torch.mean((img1.cpu() - img2.cpu()) ** 2)
-    assert torch.max(img1) < 10, f"Check the maximum value of img: {torch.max(img1)}"
+    if torch.max(img1) > 10:
+        print(f"Warning: Check the maximum value of img: {torch.max(img1)}")
     return 20 * torch.log10(1.0 / torch.sqrt(mse)).item()
 
 
