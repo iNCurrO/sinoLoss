@@ -1,6 +1,27 @@
-FROM rlarlgns0514/sinoloss_gihunkim:latest
-ENV PYTHON_VERSION=3.8
+FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel 
+ENV PYTHON_VERSION=3.10.8 
 
 RUN apt-get update 
+RUN apt-get install -y -q openssh-server
 
+RUN apt-get install -y -q \
+    wget \
+    zlib1g-dev \
+    openssh-server \
+    curl \
+    libssl-dev \
+    libffi-dev \
+    vim \
+    libgl1-mesa-glx
+
+RUN apt-get install -y -q \
+    libsqlite3-dev
+
+
+# Install pip
+RUN curl https://bootstrap.pypa.io/get-pip.py | python && pip install -U pip
+
+RUN pip install pydicom matplotlib scipy pandas gdown opencv-python vessl pyspng h5py
+
+RUN pip install jupyterlab
 RUN ln -s /opt/conda/bin/jupyter /usr/local/bin/jupyter

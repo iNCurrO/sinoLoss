@@ -24,9 +24,9 @@ data_arg.add_argument('--dataname', type=str, default="SparseView_fan")
 network_arg = add_argument_group('Network')
 network_arg.add_argument('--model', type=str, default="unet", choices=["UNET", 'VGG'])
 # VGG is not implemented yet
-network_arg.add_argument('--losses', type=tuple, default=tuple(["VGG", "MSE"]), )
+network_arg.add_argument('--losses', type=str, nargs='+', default=list(["VGG", "MSE"]), )
 # loss list = ['VGG', 'observer', 'MSE', 'MAE', 'sinoloss_MSE', 'sinoloss_MAE']
-network_arg.add_argument('--weights', type=tuple, default=tuple([0.5, 0.5]),)
+network_arg.add_argument('--weights', type=float, nargs='+', default=list([0.5, 0.5]),)
 network_arg.add_argument('--resume', type=str, default=None)
 
 
@@ -75,7 +75,7 @@ proj_arg.add_argument('--det_lets', type=int, default=3,
 # System parameters
 sysparm_arg = add_argument_group('System')
 sysparm_arg.add_argument('--logdir', type=str, default='/logs')
-sysparm_arg.add_argument('--trainingepoch', type=int, default=200)
+sysparm_arg.add_argument('--trainingepoch', type=int, default=500)
 sysparm_arg.add_argument('--optimizer', type=str, default="ADAM", choices=["ADAM", "ADAMW"])
 sysparm_arg.add_argument('--learningrate', type=float, default=0.0001)
 sysparm_arg.add_argument('--lrdecay', type=float, default=0.0001)

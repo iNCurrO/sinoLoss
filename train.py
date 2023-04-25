@@ -10,7 +10,7 @@ if not os.name == 'nt':
     print("Initialize Vessl")
     vessl.configure(
             organization_name="yonsei-medisys",
-            project_name="SinoLoss"
+            project_name="sino-domain-loss",
         )
     print()
 model_init = {

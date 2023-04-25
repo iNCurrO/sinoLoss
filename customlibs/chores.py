@@ -20,6 +20,7 @@ def set_dir(config):
         dirnum = 0
     __savedir__ = f"{dirnum:03}"
     losses = ""
+    print(config.losses, config.weights)
     for i, lossname in enumerate(config.losses):
         losses += str(config.weights[i]) + lossname
     __savedir__ = __savedir__ + "_" + str(config.model) + "_" + losses + "_" + config.dataname
