@@ -22,7 +22,7 @@ class sinogramDataset(Dataset):
 
         self._image_fnames = sorted(fname for fname in self._all_fnames if self._file_ext(fname) == '.npy')
         if len(self._image_fnames) == 0:
-            raise IOError('No image files found in the specified path')
+            raise IOError(f'No image files found in the specified path : {self._path}')
 
         self._name = os.path.splitext(os.path.basename(self._path))[0]
         self._img_shape = [len(self._image_fnames)] + list(self._load_raw_image(0).shape)

@@ -1,0 +1,6 @@
+FROM rlarlgns0514/sinoloss_gihunkim:latest
+ENV PYTHON_VERSION=3.8
+
+RUN apt-get update 
+
+RUN ln -s /opt/conda/bin/jupyter /usr/local/bin/jupyter
