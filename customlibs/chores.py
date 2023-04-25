@@ -2,6 +2,7 @@ import os
 import torch
 import pickle
 import numpy as np
+import platform
 from PIL import Image
 if not os.name == 'nt':
     import vessl
@@ -23,7 +24,7 @@ def set_dir(config):
         losses += str(config.weights[i]) + lossname
     __savedir__ = __savedir__ + "_" + str(config.model) + "_" + losses + "_" + config.dataname
     if not os.name == 'nt':
-        vessl.init(message=config.computername + "_" + __savedir__)
+        vessl.init(message=platform.node() + "_" + __savedir__)
     __savedir__ = os.path.join(config.logdir, __savedir__)
     os.mkdir(__savedir__)
     return [__savedir__, dirnum]

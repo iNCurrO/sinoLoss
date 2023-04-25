@@ -47,7 +47,6 @@ def evaluate(resumenum=None, __savedir__=None):
     total_SSIM = 0.0
     total_MSE = 0.0
     total_sinoMSE = 0.0
-    final_idx = 0
     for batch_idx, samples in enumerate(valdataloader):
         [noisy_img, sino, _] = samples
         denoised_img = network(noisy_img.cuda()).cpu()
@@ -65,8 +64,9 @@ def evaluate(resumenum=None, __savedir__=None):
         )
         torch.cuda.empty_cache()
 
-    log_str = f'Finished! SSIM: {total_SSIM}, PSNR: {total_PSNR}, MSE in image domain: {total_MSE}, ' \
-              f'MSE in sino domain: {total_sinoMSE}\nFor total {final_idx}'
+    log_str = f'Finished! SSIM: {total_SSIM/len(valdataloader)}, PSNR: {total_PSNR/len(valdataloader)}, '\
+              f'MSE in image domain: {total_MSE/len(valdataloader)}, ' \
+              f'MSE in sino domain: {total_sinoMSE/len(valdataloader)}\nFor total {len(valdataloader)}'
     print(log_str)
     with open(os.path.join(__savedir__, 'validation_logs.txt'), 'w') as log_file:
         print(log_str, file=log_file)
