@@ -70,7 +70,7 @@ def main():
 
     print(f"Train Done!")
 
-    evaluate(resumenum=str(__dirnum__)+'-'+str(config.trainingepoch-1), __savedir__=__savedir__)
+    evaluate(resumenum=str(__dirnum__)+'-'+str(config.trainingepoch), __savedir__=__savedir__)
     print(f"Testing Done!")
 
 

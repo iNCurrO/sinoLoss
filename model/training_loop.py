@@ -133,11 +133,20 @@ def training_loop(
                         caption=f'Epoch:{cur_epoch:4}'
                     )
                 ]})
-            if cur_epoch % checkpoint_intvl == 0:
+            if cur_epoch == training_epoch - 1:
+                save_network(network=network, epoch=training_epoch, optimizer=optimizer, savedir=log_dir)
+                save_images(
+                    val_denoised_img.cpu().detach().numpy(),
+                    epoch=training_epoch,
+                    tag="denoised",
+                    savedir=log_dir,
+                    batchnum=val_batch_size
+                )
+            elif cur_epoch ~= 0 and cur_epoch % checkpoint_intvl == 0:
                 save_network(network=network, epoch=cur_epoch, optimizer=optimizer, savedir=log_dir)
                 save_images(
                     val_denoised_img.cpu().detach().numpy(),
-                    epoch=cur_epoch+1,
+                    epoch=cur_epoch,
                     tag="denoised",
                     savedir=log_dir,
                     batchnum=val_batch_size
