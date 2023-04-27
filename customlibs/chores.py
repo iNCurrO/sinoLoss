@@ -36,26 +36,29 @@ def resume_network(resume, network, optimizer, config):
         dir_num =resume_file.split('-')[0]
         cp_num = resume_file.split('-')[1]
         try:
-            logdirs = [filename for filename in os.listdir(config.logdir) if filename.startswith(dir_num)]
+            logdirs = [filename for filename in os.listdir(config.logdir) if filename.startswith(f"{int(dir_num):03}")]
             if not len(logdirs) == 1:
                 raise FileNotFoundError
             else:
                 logdir = logdirs[0]
             fn = None
             for filename in os.listdir(os.path.join(config.logdir, logdir)):
-                if filename.startswith('network-' + cp_num) and os.path.isfile(filename):
+                if filename.startswith('network-' + cp_num):
                     if fn is None:
                         fn = filename
                     else:
-                        raise FileNotFoundError
-            return fn
+                        raise LookupError
+            if fn is None:
+                raise FileNotFoundError
+            print(f'Resuming... {fn}')
+            return logdir, fn
         except FileNotFoundError:
             print(f'Not founded for {resume_file}, Train with random init.\n')
             return None
 
-    resume_file = find_network(resume_file=resume)
+    traindir, resume_file = find_network(resume_file=resume)
     if resume_file is not None:
-        ckpt = torch.load(resume_file)
+        ckpt = torch.load(os.path.join(config.logdir, traindir, resume_file))
         network.load_state_dict(ckpt['model_state_dict'])
         if ckpt['optimizer_state_dict']:
             optimizer.load_state_dict(ckpt['optimizer_state_dict'])

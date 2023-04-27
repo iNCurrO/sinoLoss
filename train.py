@@ -3,7 +3,7 @@ from model import unet
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
-from evaluate import evaluate
+from evaluate import evaluate_main
 
 if not os.name == 'nt':
     import vessl

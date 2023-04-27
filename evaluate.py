@@ -14,7 +14,7 @@ model_init = {
 }
 
 
-def evaluate(network, valdataloader, Amatrix, saveimg=False):
+def evaluate(network, valdataloader, Amatrix, saveimg=False, savedir = None):
     total_PSNR = 0.0
     total_SSIM = 0.0
     total_MSE = 0.0
@@ -26,21 +26,20 @@ def evaluate(network, valdataloader, Amatrix, saveimg=False):
         total_SSIM += calculate_SSIM(denoised_img, noisy_img)/num_data
         total_PSNR += calculate_psnr(denoised_img, noisy_img)/num_data
         total_MSE += calculate_MSE(denoised_img, noisy_img).detach().item()/num_data
-        total_sinoMSE += calculate_sinoMSE(denoised_img, sino, Amatrix).detach().item()/num_data
+        total_sinoMSE += calculate_sinoMSE(denoised_img.to(config.device), sino.to(config.device), Amatrix).detach().item()/num_data
         if saveimg:
             save_images(
-                noisy_img.cpu().detach().numpy(), 'noisy', str(batch_idx), os.path.join(__savedir__),
+                noisy_img.cpu().detach().numpy(), 'noisy', str(batch_idx), os.path.join(savedir),
                 config.valbatchsize
             )
             save_images(
-                denoised_img.cpu().detach().numpy(), 'denoised', str(batch_idx), os.path.join(__savedir__),
+                denoised_img.cpu().detach().numpy(), 'denoised', str(batch_idx), os.path.join(savedir),
                 config.valbatchsize
             )
         torch.cuda.empty_cache()
     return total_SSIM, total_PSNR, total_MSE, total_sinoMSE
 
 def evaluate_main(resumenum=None, __savedir__=None):
-    config.device = 'cpu'
     # initialize dataset
     print(f"Data initialization: {config.dataname}\n")
     dataloader, valdataloader, num_channels = set_dataset(config)
@@ -67,7 +66,7 @@ def evaluate_main(resumenum=None, __savedir__=None):
     print(f"Evaluation logs will be archived at the {__savedir__}\n")
     resume_network(resume=resumenum, network=network, optimizer=optimizer, config=config)
     network.eval()
-    total_SSIM, total_PSNR, total_MSE, total_sinoMSE = evaluate(network, valdataloader, Amatrix, saveimg=True)
+    total_SSIM, total_PSNR, total_MSE, total_sinoMSE = evaluate(network, valdataloader, Amatrix, saveimg=True, savedir = __savedir__)
 
     log_str = f'Finished! SSIM: {total_SSIM}, PSNR: {total_PSNR}, '\
               f'MSE in image domain: {total_MSE}, ' \
@@ -78,6 +77,6 @@ def evaluate_main(resumenum=None, __savedir__=None):
 
 
 if __name__ == "__main__":
-    temp_dir = [filename for filename in os.listdir(config.logdir) if filename.startswith(config.resume.split('-')[0])]
+    temp_dir = [filename for filename in os.listdir(config.logdir) if filename.startswith(f"{int(config.resume.split('-')[0]):03}")]
     assert len(temp_dir) == 1, f'Duplicated file exists or non exist: {temp_dir}'
     evaluate_main(config.resume, os.path.join(config.logdir, temp_dir[0]))
