@@ -14,7 +14,32 @@ model_init = {
 }
 
 
-def evaluate(resumenum=None, __savedir__=None):
+def evaluate(network, valdataloader, Amatrix, saveimg=False):
+    total_PSNR = 0.0
+    total_SSIM = 0.0
+    total_MSE = 0.0
+    total_sinoMSE = 0.0
+    num_data = len(valdataloader)
+    for batch_idx, samples in enumerate(valdataloader):
+        [noisy_img, sino, _] = samples
+        denoised_img = network(noisy_img.cuda()).cpu()
+        total_SSIM += calculate_SSIM(denoised_img, noisy_img)/num_data
+        total_PSNR += calculate_psnr(denoised_img, noisy_img)/num_data
+        total_MSE += calculate_MSE(denoised_img, noisy_img).detach().item()/num_data
+        total_sinoMSE += calculate_sinoMSE(denoised_img, sino, Amatrix).detach().item()/num_data
+        if saveimg:
+            save_images(
+                noisy_img.cpu().detach().numpy(), 'noisy', str(batch_idx), os.path.join(__savedir__),
+                config.valbatchsize
+            )
+            save_images(
+                denoised_img.cpu().detach().numpy(), 'denoised', str(batch_idx), os.path.join(__savedir__),
+                config.valbatchsize
+            )
+        torch.cuda.empty_cache()
+    return total_SSIM, total_PSNR, total_MSE, total_sinoMSE
+
+def evaluate_main(resumenum=None, __savedir__=None):
     config.device = 'cpu'
     # initialize dataset
     print(f"Data initialization: {config.dataname}\n")
@@ -42,31 +67,11 @@ def evaluate(resumenum=None, __savedir__=None):
     print(f"Evaluation logs will be archived at the {__savedir__}\n")
     resume_network(resume=resumenum, network=network, optimizer=optimizer, config=config)
     network.eval()
+    total_SSIM, total_PSNR, total_MSE, total_sinoMSE = evaluate(network, valdataloader, Amatrix, saveimg=True)
 
-    total_PSNR = 0.0
-    total_SSIM = 0.0
-    total_MSE = 0.0
-    total_sinoMSE = 0.0
-    for batch_idx, samples in enumerate(valdataloader):
-        [noisy_img, sino, _] = samples
-        denoised_img = network(noisy_img.cuda()).cpu()
-        total_SSIM += calculate_SSIM(denoised_img, noisy_img)
-        total_PSNR += calculate_psnr(denoised_img, noisy_img)
-        total_MSE += calculate_MSE(denoised_img, noisy_img).detach().item()
-        total_sinoMSE += calculate_sinoMSE(denoised_img, sino, Amatrix).detach().item()
-        save_images(
-            noisy_img.cpu().detach().numpy(), 'noisy', str(batch_idx), os.path.join(__savedir__),
-            config.valbatchsize
-        )
-        save_images(
-            denoised_img.cpu().detach().numpy(), 'denoised', str(batch_idx), os.path.join(__savedir__),
-            config.valbatchsize
-        )
-        torch.cuda.empty_cache()
-
-    log_str = f'Finished! SSIM: {total_SSIM/len(valdataloader)}, PSNR: {total_PSNR/len(valdataloader)}, '\
-              f'MSE in image domain: {total_MSE/len(valdataloader)}, ' \
-              f'MSE in sino domain: {total_sinoMSE/len(valdataloader)}\nFor total {len(valdataloader)}'
+    log_str = f'Finished! SSIM: {total_SSIM}, PSNR: {total_PSNR}, '\
+              f'MSE in image domain: {total_MSE}, ' \
+              f'MSE in sino domain: {total_sinoMSE}\nFor total {len(valdataloader)}'
     print(log_str)
     with open(os.path.join(__savedir__, 'validation_logs.txt'), 'w') as log_file:
         print(log_str, file=log_file)
@@ -75,4 +80,4 @@ def evaluate(resumenum=None, __savedir__=None):
 if __name__ == "__main__":
     temp_dir = [filename for filename in os.listdir(config.logdir) if filename.startswith(config.resume.split('-')[0])]
     assert len(temp_dir) == 1, f'Duplicated file exists or non exist: {temp_dir}'
-    evaluate(config.resume, os.path.join(config.logdir, temp_dir[0]))
+    evaluate_main(config.resume, os.path.join(config.logdir, temp_dir[0]))

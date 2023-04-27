@@ -8,7 +8,7 @@ if not os.name == 'nt':
 from customlibs.chores import save_network, save_images, lprint
 from customlibs.metrics import *
 from model.loss import *
-
+from evaluate import evaluate
 
 def training_loop(
         log_dir: str = "./log",  # log dir
@@ -98,41 +98,39 @@ def training_loop(
                     log_dir=log_dir
                 )
             optimizer.step()
+        vessl.log(step=cur_epoch, payload={"trainingloss_"+keys: logs[keys] for keys in logs})
 
         # Save check point and evaluate
         network.eval()
         with torch.no_grad():
-            val_denoised_img = network(val_noisy_img.to(device))
+            if cur_epoch%5 == 0:
+                val_ssim, val_psnr, val_mse, val_sinomse = evaluate(network, validation_set, Amatrix)
+                # Print log
+                lprint(
+                    f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                    f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
+                    str(logs) + '\n' +
+                    f'metrics: SSIM [{val_ssim}], '
+                    f'PSRN [{val_psnr}], '
+                    f'MSE: [{val_mse}], '
+                    f'sinoMSE: [{val_sinomse}]',
+                    log_dir=log_dir
+                )
+                if not os.name == 'nt':
+                    vessl.log(step=cur_epoch, payload={
+                        "SSIM": val_ssim,
+                        "PSNR": val_psnr,
+                        "MSE": val_mse,
+                        "sinoMSE": val_sinomse,
+                    })
 
-            # Print log
-            lprint(
-                f'Train Epoch: {cur_epoch}/{training_epoch},' +
-                f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
-                str(logs) + '\n' +
-                f'metrics: PSNR [{calculate_psnr(val_denoised_img, val_noisy_img)}], '
-                f'SSIM [{calculate_SSIM(val_denoised_img, val_noisy_img)}], '
-                f'MSE: [{calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item()}], '
-                f'sinoMSE: [{calculate_sinoMSE(val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix).detach().item()}]',
-                log_dir=log_dir
-            )
-            if not os.name == 'nt':
-                vessl.log(step=cur_epoch, payload={keys: logs[keys] for keys in logs})
-                vessl.log(step=cur_epoch, payload={
-                    "SSIM": calculate_SSIM(val_denoised_img, val_noisy_img),
-                    "PSNR": calculate_psnr(val_denoised_img, val_noisy_img),
-                    "MSE": calculate_MSE(val_denoised_img.to(device), val_noisy_img.to(device)).detach().item(),
-                    "sinoMSE": calculate_sinoMSE(
-                        val_denoised_img.to(device), val_target_sino.to(device), Amatrix=Amatrix
-                    ).detach().item(),
-                })
-
-            if not os.name == 'nt':
-                vessl.log(payload={"denoised_images": [
-                    vessl.Image(
-                        data=val_denoised_img.cpu().detach().numpy(),
-                        caption=f'Epoch:{cur_epoch:4}'
-                    )
-                ]})
+                if not os.name == 'nt':
+                    vessl.log(payload={"denoised_images": [
+                        vessl.Image(
+                            data=val_denoised_img.cpu().detach().numpy(),
+                            caption=f'Epoch:{cur_epoch:4}'
+                        )
+                    ]})
             if cur_epoch == training_epoch - 1:
                 save_network(network=network, epoch=training_epoch, optimizer=optimizer, savedir=log_dir)
                 save_images(
@@ -142,7 +140,7 @@ def training_loop(
                     savedir=log_dir,
                     batchnum=val_batch_size
                 )
-            elif cur_epoch ~= 0 and cur_epoch % checkpoint_intvl == 0:
+            elif cur_epoch != 0 and cur_epoch % checkpoint_intvl == 0:
                 save_network(network=network, epoch=cur_epoch, optimizer=optimizer, savedir=log_dir)
                 save_images(
                     val_denoised_img.cpu().detach().numpy(),
@@ -154,10 +152,8 @@ def training_loop(
         network.train()
         if not os.name == 'nt':
             vessl.progress((cur_epoch+1)/training_epoch)
-            # vessl.upload(log_dir)
 
     # End Training. Close everything
-    # lprint(prof.key_averages(group_by_stack_n=5).table(sort_by='self_cpu_time_total', row_limit=5), log_dir=log_dir)
     with open(os.path.join(log_dir, 'logs.txt'), 'a') as log_file:
         print(f"Training Completed: EOF", file=log_file)
     if not os.name == 'nt':
