@@ -107,7 +107,8 @@ def training_loop(
                 val_ssim, val_psnr, val_mse, val_sinomse = evaluate(network, validation_set, Amatrix)
                 # Print log
                 lprint(
-                    f'Train Epoch: {cur_epoch}/{training_epoch},' +
+                    f'==========================================================================\n' +
+                    f'Evaluation for Epoch: {cur_epoch}/{training_epoch},' +
                     f'mean(sec/Epoch): {(time.time() - start_time) / (cur_epoch+1)}, loss:' +
                     str(logs) + '\n' +
                     f'metrics: SSIM [{val_ssim}], '
