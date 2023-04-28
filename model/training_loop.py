@@ -103,6 +103,7 @@ def training_loop(
         # Save check point and evaluate
         network.eval()
         with torch.no_grad():
+            val_denoised_img = network(val_noisy_img.to(device))
             if cur_epoch%5 == 0:
                 val_ssim, val_psnr, val_mse, val_sinomse = evaluate(network, validation_set, Amatrix)
                 # Print log
