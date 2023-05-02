@@ -1,6 +1,7 @@
 import torch
 import cv2
 import numpy as np
+import math
 from torch.nn.functional import mse_loss, conv2d
 
 
@@ -75,6 +76,8 @@ def calculate_SSIM_local(img1, img2, window_size=11):
 
     # L is the dynamic range of the pixel values (255 for 8-bit grayscale images),    
     L = 1
+    img1 = torch.clamp(img1, min=0.0, max=1.0)
+    img2 = torch.clamp(img2, min=0.0, max=1.0)
     
     try:
         _, channels, height, width = img1.size()
