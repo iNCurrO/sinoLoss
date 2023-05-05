@@ -72,6 +72,8 @@ def main():
 
     evaluate_main(resumenum=str(__dirnum__)+'-'+str(config.trainingepoch), __savedir__=__savedir__)
     print(f"Testing Done!")
+    if not os.name == 'nt':
+        vessl.finish()
 
 
 if __name__ == "__main__":

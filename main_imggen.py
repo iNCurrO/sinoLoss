@@ -14,6 +14,7 @@ import torch.nn.functional as F
 args = get_config()
 device = torch.device(args.device)
 args.num_split = 1
+args.noise=1e6
 # binning_size = (4, 1)
 # args.num_det = int(args.num_det / binning_size[0])
 # args.det_interval *= binning_size[0]

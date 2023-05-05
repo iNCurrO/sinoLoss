@@ -27,6 +27,13 @@ class FP(nn.Module):
         elif self.args.datatype == 'double':
             self.args.datatype = torch.double
 
+        if self.args.noise != 0:
+            self.noise = True
+            self.num_photons = self.args.noise
+        else:
+            self.noise = False
+            self.num_photons = 0
+        
         # angle setting
         self.rot_dir = 1  # 1 for clockwise -1 for counterclockwise
         self.rot_deg = 360
@@ -123,7 +130,15 @@ class FP(nn.Module):
                                                         [self.batch, 1, 1, 1]),
                                         padding_mode="zeros", mode='bilinear', align_corners=False)
             interp_grid = interp_grid.view(self.batch, self.ch, self.args.num_det, -1)  # (batch, ch, det, x+y+1)
-            sinogram[:, :, i, :] = torch.sum(self.weighting[:, :, i, :, :] * interp_grid, dim=-1)
+            if self.noise:
+                pixel_sum = torch.sum(self.weighting[:, :, i, :, :] * interp_grid, dim=-1)
+                Nin = self.num_photons*torch.exp(-pixel_sum/10)
+                proj_noise = 10*(torch.log(self.num_photons)-torch.log(torch.poisson(Nin)))
+                sinogram[:, :, i, :] = proj_noise
+            else:
+                sinogram[:, :, i, :] = torch.sum(self.weighting[:, :, i, :, :] * interp_grid, dim=-1)
+            
+                
 
         sinogram[torch.isnan(sinogram)] = 0
         return sinogram

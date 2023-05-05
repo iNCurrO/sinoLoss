@@ -39,6 +39,7 @@ proj_arg.add_argument('--pixel_size', type=float, default=0.4525,
 proj_arg.add_argument('--quarter_offset', action='store_true', help='detector quarter offset')
 proj_arg.add_argument('--geometry', type=str, default='fan', help='CT geometry')
 proj_arg.add_argument('--mode', type=str, default='equiangular', help="CT detector arrangement")
+proj_arg.add_argument('--noise', type=int, default=0, help='Number of photons for poisson noise. Set 0 to No noise')
 proj_arg.add_argument('--view', type=int, default=18,
                       help='number of view (should be even number for quarter-offset')
 proj_arg.add_argument('--num_split', type=int, default=512,

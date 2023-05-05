@@ -158,5 +158,3 @@ def training_loop(
     # End Training. Close everything
     with open(os.path.join(log_dir, 'logs.txt'), 'a') as log_file:
         print(f"Training Completed: EOF", file=log_file)
-    if not os.name == 'nt':
-        vessl.finish()
