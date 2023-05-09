@@ -132,9 +132,13 @@ class FP(nn.Module):
             interp_grid = interp_grid.view(self.batch, self.ch, self.args.num_det, -1)  # (batch, ch, det, x+y+1)
             if self.noise:
                 pixel_sum = torch.sum(self.weighting[:, :, i, :, :] * interp_grid, dim=-1)
-                Nin = self.num_photons*torch.exp(-pixel_sum/10)
-                proj_noise = 10*(torch.log(self.num_photons)-torch.log(torch.poisson(Nin)))
-                sinogram[:, :, i, :] = proj_noise
+                sinogram[:, :, i, :] = 10*(
+                    torch.log(
+                       self.num_photons*torch.ones(pixel_sum.shape, device='cuda')
+                        )-torch.log(
+                            torch.poisson(self.num_photons*torch.exp(-pixel_sum/10))
+                            )
+                        )
             else:
                 sinogram[:, :, i, :] = torch.sum(self.weighting[:, :, i, :, :] * interp_grid, dim=-1)
             

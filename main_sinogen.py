@@ -13,6 +13,7 @@ import mat73
 args = get_config()
 
 device = torch.device(args.device)
+args.noise=1e6
 
 
 def main():
@@ -24,7 +25,7 @@ def main():
     print('save path is {}'.format(save_path))
     for i in targetimg_list:
         if os.path.splitext(i)[1] in [".mat", ".dcm"]:
-            print(f'Loading... {i}')
+            print(f'Loading... {i} at {save_path}')
             # data = pydicom.dcmread(os.path.join(path, i))
             # img = data.pixel_array*data.RescaleSlope
             try:
@@ -32,15 +33,16 @@ def main():
             except NotImplementedError:
                 data = mat73.loadmat(i)
             img = data["ph"]
-            img = torch.FloatTensor(img).unsqueeze(0).permute(3, 0, 1, 2)
+            img = torch.FloatTensor(img).unsqueeze(0).permute(3, 0, 1, 2).detach()
             tic = time.time()
-            sinogram = FP_model(img.to(device))
+            sinogram = FP_model(img.to(device)).detach()
             toc = time.time()
             sinogram = sinogram.squeeze().cpu().numpy()
             np.save(os.path.join(save_path, os.path.basename(i)[:-4]+'.npy'), sinogram)
             # for j in range(sinogram.shape[0]):
             #     save_image(sinogram[j, :, :], os.path.join(save_path, os.path.basename(i)[:-4]+str(j)+'.png'), sino=False)
             print('Done, time: {}'.format(toc-tic))
+            torch.cuda.empty_cache()
 
 
 if __name__ == '__main__':
