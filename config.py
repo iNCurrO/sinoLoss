@@ -40,7 +40,7 @@ proj_arg.add_argument('--quarter_offset', action='store_true', help='detector qu
 proj_arg.add_argument('--geometry', type=str, default='fan', help='CT geometry')
 proj_arg.add_argument('--mode', type=str, default='equiangular', help="CT detector arrangement")
 proj_arg.add_argument('--noise', type=int, default=0, help='Number of photons for poisson noise. Set 0 to No noise')
-proj_arg.add_argument('--view', type=int, default=120,
+proj_arg.add_argument('--view', type=int, default=60,
                       help='number of view (should be even number for quarter-offset')
 proj_arg.add_argument('--num_split', type=int, default=512,
                       help='number of splitting processes for FP: fewer number guarantee faster speed by reducing number of loop but memory consuming')

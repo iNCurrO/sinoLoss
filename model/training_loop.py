@@ -9,6 +9,7 @@ from customlibs.chores import save_network, save_images, lprint
 from customlibs.metrics import *
 from model.loss import *
 from evaluate import evaluate
+from datetime import timedelta
 
 def training_loop(
         log_dir: str = "./log",  # log dir
@@ -94,7 +95,7 @@ def training_loop(
                     f'{(time.time() - start_time) / (cur_epoch + (batch_idx+config.batchsize) / len(training_set))}'
                     f', loss:' +
                     str(logs) +
-                    f'ETA: {(time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) * (training_epoch - cur_epoch - batch_idx / len(training_set)) if not (cur_epoch==0 and batch_idx==0) else 0}',
+                    f'ETA: {timedelta((time.time() - start_time) / (cur_epoch + batch_idx / len(training_set)) * (training_epoch - cur_epoch - batch_idx / len(training_set)) if not (cur_epoch==0 and batch_idx==0) else 0)}',
                     log_dir=log_dir
                 )
             optimizer.step()

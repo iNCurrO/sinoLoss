@@ -23,7 +23,7 @@ def set_dir(config):
     print(config.losses, config.weights)
     for i, lossname in enumerate(config.losses):
         losses += str(config.weights[i]) + lossname
-    __savedir__ = __savedir__ + "_" + str(config.model) + "_" + losses + "_" + config.dataname
+    __savedir__ = __savedir__ + "_" + str(config.model) + "_" + losses + "_" + config.dataname + "_View-" + str(config.view)
     if not os.name == 'nt':
         vessl.init(message=platform.node() + "_" + __savedir__)
     __savedir__ = os.path.join(config.logdir, __savedir__)
