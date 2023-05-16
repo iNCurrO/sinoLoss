@@ -89,13 +89,15 @@ def training_loop(
                 targetsino=sino.to(device)
             )
             if batch_idx % 99 == 0:
+                nettime = time.time() - start_time
+                realtime_epoch = (cur_epoch + ((batch_idx+config.batchsize) / len(training_set)))
                 lprint(
                     f'Train Epoch: {cur_epoch}/{training_epoch}, Batch: {batch_idx}/{len(training_set)}' +
                     f'mean(sec/epoch): '
-                    f'{(time.time() - start_time) / (cur_epoch + ((batch_idx+config.batchsize) / len(training_set)))}'
+                    f'{nettime / realtime_epoch}'
                     f', loss:' +
                     str(logs) +
-                    f'ETA: {timedelta((time.time() - start_time) / (cur_epoch + ((batch_idx+config.batchsize) / len(training_set))) * (training_epoch - (cur_epoch +( (batch_idx+config.batchsize) / len(training_set)))) if not (cur_epoch==0 and batch_idx==0) else 0)}',
+                    f'ETA: {timedelta(seconds=(nettime / realtime_epoch * (training_epoch - realtime_epoch)) if not (cur_epoch==0 and batch_idx==0) else 0)}',
                     log_dir=log_dir
                 )
             optimizer.step()
