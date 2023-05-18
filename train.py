@@ -37,10 +37,10 @@ def main():
     __savedir__, __dirnum__ = set_dir(config)
     # Check Resume?
     if config.resume:
-        print(f"Resume from: {config.resume}\n")
-        __savedir__ += f"_resume{config.resume}"
         print(f"New logs will be archived at the {__savedir__}\n")
+        print("Loading.... network")
         resume_network(config.resume, network, optimizer, config)
+        print("loaded!")
     else:
         # Make dir
         print(f"logs will be archived at the {__savedir__}\n")

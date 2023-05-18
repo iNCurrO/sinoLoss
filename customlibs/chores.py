@@ -27,6 +27,9 @@ def set_dir(config):
     if not os.name == 'nt':
         vessl.init(message=platform.node() + "_" + __savedir__)
     __savedir__ = os.path.join(config.logdir, __savedir__)
+    if config.resume:
+        print(f"Resume from: {config.resume}\n")
+        __savedir__ += f"_resume{config.resume}"
     os.mkdir(__savedir__)
     return [__savedir__, dirnum]
 
