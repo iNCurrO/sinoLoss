@@ -135,7 +135,10 @@ def set_dataset(config):
 
     # Dataset for training
     __inputdir__ = os.path.join(basedir, "view"+str(config.view)+"_recon")
-    __sinodir__ = os.path.join(basedir, "view"+str(config.view)+"_sino")
+    if config.useFV:
+        __sinodir__ = os.path.join(basedir, "Fullview_sino")
+    else:
+        __sinodir__ = os.path.join(basedir, "view"+str(config.view)+"_sino")
     __targetdir__ = os.path.join(basedir, "Fullview_recon")
     ds = TotalDataset(
             inputdataset=sinogramDataset(path=__inputdir__),
@@ -145,7 +148,10 @@ def set_dataset(config):
 
     # Dataset for validation
     __inputdir__ = os.path.join(basedir, "view"+str(config.view)+"_recon_val")
-    __sinodir__ = os.path.join(basedir, "view"+str(config.view)+"_sino_val")
+    if config.useFV:
+        __sinodir__ = os.path.join(basedir, "Fullview_sino_val")
+    else:
+        __sinodir__ = os.path.join(basedir, "view"+str(config.view)+"_sino_val")
     __targetdir__ = os.path.join(basedir, "Fullview_recon_val")
     ds_v = TotalDataset(
             inputdataset=sinogramDataset(path=__inputdir__),
