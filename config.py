@@ -17,24 +17,24 @@ data_arg = add_argument_group('Data')
 data_arg.add_argument('--batchsize', type=int, default=1, help='Number of batch size. Recommend power of 2')
 data_arg.add_argument('--valbatchsize', type=int, default=1, help='Number of batch size. Must be square of int')
 data_arg.add_argument('--datadir', type=str, default="/dataset")
-data_arg.add_argument('--dataname', type=str, default="Sparse_view_MTF")
+data_arg.add_argument('--dataname', type=str, default="SparseView_small")
 data_arg.add_argument('--useFV', type=bool, default=False)
 
 
 # Network
 network_arg = add_argument_group('Network')
-network_arg.add_argument('--model', type=str, default="unet", choices=["UNET", 'VGG'])
+network_arg.add_argument('--model', type=str, default="unet", choices=["UNET", 'VGG', 'REDCNN'])
 # VGG is not implemented yet
-network_arg.add_argument('--losses', type=str, nargs='+', default=list(["VGG", "MSE"]), )
+network_arg.add_argument('--losses', type=str, nargs='+', default=list(["MSE"]), )
 # loss list = ['VGG', 'observer', 'MSE', 'MAE', 'sinoloss_MSE', 'sinoloss_MAE']
-network_arg.add_argument('--weights', type=float, nargs='+', default=list([0.5, 0.5]),)
+network_arg.add_argument('--weights', type=float, nargs='+', default=list([1.0]),)
 network_arg.add_argument('--resume', type=str, default=None)
 network_arg.add_argument('--metal', action='store_false', help='Not using Masking')
 
 
 # Forward Projection
 proj_arg = add_argument_group('ForwardProejction')
-proj_arg.add_argument('--img_size', type=list, default=[800, 800],
+proj_arg.add_argument('--img_size', type=int, default=800,
                       help='Phantom image size')
 proj_arg.add_argument('--pixel_size', type=float, default=0.4525    ,
                       help='Pixel size of the phantom image')
@@ -57,7 +57,7 @@ recon_arg.add_argument('--window', type=str, default='rect', help='Reconstructio
 recon_arg.add_argument('--cutoff', type=float, default=0.3, help='Cutoff Frequency of some windows')
 recon_arg.add_argument('--ROIx', type=float, default=0, help='x ROI location')
 recon_arg.add_argument('--ROIy', type=float, default=0, help='y ROI location')
-recon_arg.add_argument('--recon_size', type=list, default=[512, 512], help='Reconstruction image size')
+recon_arg.add_argument('--recon_size', type=int, default=512, help='Reconstruction image size')
 recon_arg.add_argument('--recon_filter', type=str, default='ram-lak', help='Reconstruction Filter')
 recon_arg.add_argument('--recon_interval', type=float, default=0.70703, help='Pixel size of the reconstruction image')
 recon_arg.add_argument('--num_interp', type=int, default=4, help='number of sinc interpolation in sinogram domain')

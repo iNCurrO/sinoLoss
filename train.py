@@ -1,5 +1,5 @@
 from config import get_config
-from model import unet
+from model import unet, redcnn
 from customlibs.chores import *
 from customlibs.dataset import set_dataset
 from model.training_loop import training_loop
@@ -15,6 +15,7 @@ if not os.name == 'nt':
     print()
 model_init = {
     'UNET': lambda config, img_channel: unet.Unet(n_channels=img_channel),
+    'REDCNN': lambda config, img_channel: redcnn.redcnn(n_channels=img_channel)
 }
 
 
