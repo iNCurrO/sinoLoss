@@ -15,7 +15,7 @@ if not os.name == 'nt':
     print()
 model_init = {
     'UNET': lambda config, img_channel: unet.Unet(n_channels=img_channel),
-    'REDCNN': lambda config, img_channel: redcnn.redcnn(n_channels=img_channel)
+    'REDCNN': lambda config, img_channel: redcnn.redcnn(n_channels=img_channel, basechannel=config.base_channel, act_func=config.act_func)
 }
 
 

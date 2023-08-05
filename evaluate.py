@@ -4,13 +4,14 @@ from config import get_config
 from customlibs.chores import *
 import torch
 from forwardprojector.FP import FP
-from model import unet
+from model import unet, redcnn
 from customlibs.dataset import set_dataset
 from customlibs.metrics import *
 # Parse configuration
 config = get_config()
 model_init = {
     'UNET': lambda config, img_channel: unet.Unet(n_channels=img_channel),
+    'REDCNN': lambda config, img_channel: redcnn.redcnn(n_channels=img_channel, basechannel=config.base_channel, act_func=config.act_func)
 }
 
 

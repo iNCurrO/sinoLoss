@@ -25,10 +25,12 @@ data_arg.add_argument('--useFV', type=bool, default=False)
 network_arg = add_argument_group('Network')
 network_arg.add_argument('--model', type=str, default="unet", choices=["UNET", 'VGG', 'REDCNN'])
 # VGG is not implemented yet
-network_arg.add_argument('--losses', type=str, nargs='+', default=list(["MSE"]), )
+network_arg.add_argument('--losses', type=str, nargs='+', default=list(["VGG"]), )
 # loss list = ['VGG', 'observer', 'MSE', 'MAE', 'sinoloss_MSE', 'sinoloss_MAE']
 network_arg.add_argument('--weights', type=float, nargs='+', default=list([1.0]),)
 network_arg.add_argument('--resume', type=str, default=None)
+network_arg.add_argument('--base_channel', type=int, default=64)
+network_arg.add_argument('--act_func', type=str, default='ReLU')
 network_arg.add_argument('--metal', action='store_false', help='Not using Masking')
 
 
