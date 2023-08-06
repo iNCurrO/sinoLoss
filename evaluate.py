@@ -24,12 +24,11 @@ def evaluate(network, valdataloader, Amatrix, saveimg=False, savedir = None):
     for batch_idx, samples in enumerate(valdataloader):
         [noisy_img, sino, target_images] = samples
         denoised_img = network(noisy_img.cuda()).cpu()
-        total_SSIM += calculate_SSIM(denoised_img, target_images)/num_data
-        total_PSNR += calculate_psnr(denoised_img, target_images)/num_data
-        total_MSE += calculate_MSE(denoised_img, target_images).detach().item()/num_data
-        total_sinoMSE += calculate_sinoMSE(denoised_img.to(config.device), sino.to(config.device), Amatrix).detach().item()/num_data
+        total_SSIM += calculate_SSIM(noisy_img, target_images)/num_data
+        total_PSNR += calculate_psnr(noisy_img, target_images)/num_data
+        total_MSE += calculate_MSE(noisy_img, target_images).detach().item()/num_data
+        total_sinoMSE += calculate_sinoMSE(noisy_img.to(config.device), sino.to(config.device), Amatrix).detach().item()/num_data
         if saveimg:
-            save_image
             save_images(
                 target_images.cpu().detach().numpy(), 'target', str(batch_idx), os.path.join(savedir),
                 config.valbatchsize
